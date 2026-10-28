@@ -1,9 +1,11 @@
 import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { LocalSapiTtsProvider } from '../src/modules/narration/local-sapi-tts.provider';
+import { ConfigService } from '@nestjs/config';
 
 async function runVerification() {
-  console.log('=== STARTING LOCAL VIDEO RENDER & FFPROBE VALIDATION ===');
+  console.log('=== STARTING LOCAL VIDEO RENDER & FFPROBE VALIDATION WITH NATURAL SPOKEN SPEECH ===');
 
   const ffmpegPath = 'C:\\WINDOWS\\system32\\ffmpeg.exe';
   const ffprobeStatic = require('ffprobe-static');
@@ -25,49 +27,68 @@ async function runVerification() {
     fs.mkdirSync(outDir, { recursive: true });
   }
 
-  // 1. Generate a valid 5-second PCM WAV audio file directly
-  const sampleRate = 44100;
-  const durationSeconds = 5;
-  const numSamples = sampleRate * durationSeconds;
-  const dataSize = numSamples * 2;
-  const wavBuffer = Buffer.alloc(44 + dataSize);
+  // 1. Synthesize natural spoken voiceover from an original short script using LocalSapiTtsProvider
+  const originalScript = `
+# YouTube Automation Studio
+[SECTION 1: INTRODUCTION & DEMO]
+Welcome to YouTube Automation Studio!
+(Visual cue: System dashboard overview)
+In this demonstration, our local video rendering pipeline synchronizes clear spoken narration with visual text overlays.
+Everything is processed offline using local tools without requiring any paid third-party APIs.
+[OUTRO]
+Thank you for reviewing, and enjoy creating original content!
+`;
 
-  wavBuffer.write('RIFF', 0);
-  wavBuffer.writeUInt32LE(36 + dataSize, 4);
-  wavBuffer.write('WAVE', 8);
-  wavBuffer.write('fmt ', 12);
-  wavBuffer.writeUInt32LE(16, 16);
-  wavBuffer.writeUInt16LE(1, 20); // PCM
-  wavBuffer.writeUInt16LE(1, 22); // Mono
-  wavBuffer.writeUInt32LE(sampleRate, 24);
-  wavBuffer.writeUInt32LE(sampleRate * 2, 28);
-  wavBuffer.writeUInt16LE(2, 32);
-  wavBuffer.writeUInt16LE(16, 34);
-  wavBuffer.write('data', 36);
-  wavBuffer.writeUInt32LE(dataSize, 40);
+  console.log('--- ORIGINAL SCRIPT FOR SPOKEN NARRATION ---');
+  console.log(originalScript.trim());
 
-  for (let i = 0; i < numSamples; i++) {
-    const t = i / sampleRate;
-    const env = Math.exp(-((t % 1.5) * 4));
-    const sample = Math.sin(2 * Math.PI * 440 * t) * env * 0.2 * 32767;
-    wavBuffer.writeInt16LE(Math.floor(sample), 44 + i * 2);
+  const audioPath = path.join(outDir, 'sample_spoken_narration.wav');
+  if (fs.existsSync(audioPath)) {
+    fs.unlinkSync(audioPath);
   }
 
-  const audioPath = path.join(outDir, 'sample_audio.wav');
-  fs.writeFileSync(audioPath, wavBuffer);
-  console.log(`Synthesized valid test audio: ${audioPath} (${fs.statSync(audioPath).size} bytes)`);
+  const mockConfigService = {
+    get: (key: string, def?: any) => {
+      if (key === 'FFPROBE_PATH') return ffprobePath;
+      if (key === 'TTS_VOICE') return 'Microsoft David Desktop';
+      return def;
+    },
+  } as unknown as ConfigService;
 
-  // 2. Render MP4 video via FFmpeg using lavfi color source + text overlays + audio sync
+  const ttsProvider = new LocalSapiTtsProvider(mockConfigService);
+  console.log(`Synthesizing spoken audio via provider: ${ttsProvider.providerName}...`);
+
+  const ttsResult = await ttsProvider.synthesize(originalScript, audioPath, {
+    voiceId: 'Microsoft David Desktop',
+    speed: 0,
+  });
+
+  console.log(`Synthesized spoken voiceover file: ${ttsResult.filePath}`);
+  console.log(`Voiceover duration: ${ttsResult.durationSeconds}s, format: ${ttsResult.format}, size: ${fs.statSync(audioPath).size} bytes`);
+
+  if (!fs.existsSync(audioPath) || fs.statSync(audioPath).size < 1000) {
+    throw new Error('Synthesized audio file is missing or contains no audio data');
+  }
+
+  const audioDuration = ttsResult.durationSeconds;
+  if (audioDuration < 5.0) {
+    throw new Error(`Spoken audio duration unexpectedly short (${audioDuration}s). Speech might be truncated.`);
+  }
+
+  // 2. Render MP4 video via FFmpeg using lavfi color source + text overlays + synchronized spoken audio
   const videoOutputPath = path.join(outDir, 'sample_verification.mp4');
   if (fs.existsSync(videoOutputPath)) {
     fs.unlinkSync(videoOutputPath);
   }
 
+  // Render video slightly longer than audio so -shortest cleanly clamps to audio duration
+  const canvasDuration = Math.ceil(audioDuration) + 1;
+
   const ffmpegArgs = [
     '-f', 'lavfi',
-    '-i', 'color=c=0x0b0f17:s=1280x720:r=30:d=5',
+    '-i', `color=c=0x0b0f17:s=1280x720:r=30:d=${canvasDuration}`,
     '-i', audioPath,
-    '-vf', "drawtext=text='YOUTUBE AUTOMATION STUDIO':fontcolor=white:fontsize=36:x=(w-text_w)/2:y=(h-text_h)/2-30,drawtext=text='PHASE 3 VERIFIED RENDER':fontcolor=0x38bdf8:fontsize=22:x=(w-text_w)/2:y=(h-text_h)/2+25",
+    '-vf', "drawtext=text='YOUTUBE AUTOMATION STUDIO':fontcolor=white:fontsize=36:x=(w-text_w)/2:y=(h-text_h)/2-40,drawtext=text='NATURAL SPOKEN SPEECH VERIFIED':fontcolor=0x38bdf8:fontsize=22:x=(w-text_w)/2:y=(h-text_h)/2+25,drawtext=text='OFFLINE SAPI TTS SYNCHRONIZED':fontcolor=0x22c55e:fontsize=16:x=(w-text_w)/2:y=(h-text_h)/2+70",
     '-c:v', 'libx264',
     '-pix_fmt', 'yuv420p',
     '-c:a', 'aac',
@@ -77,7 +98,7 @@ async function runVerification() {
     videoOutputPath,
   ];
 
-  console.log(`Executing FFmpeg: ${ffmpegPath} ${ffmpegArgs.join(' ')}`);
+  console.log(`Executing FFmpeg command:\n${ffmpegPath} ${ffmpegArgs.join(' ')}`);
 
   await new Promise<void>((resolve, reject) => {
     const proc = spawn(ffmpegPath, ffmpegArgs, { windowsHide: true });
@@ -86,7 +107,7 @@ async function runVerification() {
     proc.on('error', reject);
     proc.on('close', (code) => {
       if (code === 0) {
-        console.log(`FFmpeg completed successfully!`);
+        console.log('FFmpeg render completed successfully!');
         resolve();
       } else {
         reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
@@ -103,7 +124,7 @@ async function runVerification() {
     videoOutputPath,
   ];
 
-  console.log(`Executing FFprobe validation on ${videoOutputPath}...`);
+  console.log(`Executing FFprobe technical validation on ${videoOutputPath}...`);
 
   const probeOutput = await new Promise<string>((resolve, reject) => {
     const proc = spawn(ffprobePath, ffprobeArgs, { windowsHide: true });
@@ -130,9 +151,9 @@ async function runVerification() {
   const sizeBytes = parseInt(parsed.format?.size || '0', 10);
 
   console.log('--- TECHNICAL VALIDATION RESULTS ---');
-  console.log(`File: ${videoOutputPath}`);
-  console.log(`Size: ${sizeBytes} bytes`);
-  console.log(`Duration: ${duration}s`);
+  console.log(`Output File: ${videoOutputPath}`);
+  console.log(`Size: ${sizeBytes} bytes (${Math.round(sizeBytes / 1024)} KB)`);
+  console.log(`Duration: ${duration}s (narration was ${audioDuration}s)`);
   console.log(`Video Stream: ${videoStream?.codec_name} (${videoStream?.width}x${videoStream?.height} @ ${videoStream?.r_frame_rate} fps)`);
   console.log(`Audio Stream: ${audioStream?.codec_name} (${audioStream?.duration}s)`);
 
@@ -142,11 +163,11 @@ async function runVerification() {
   if (!audioStream || audioStream.codec_name !== 'aac') {
     throw new Error('Audio stream is missing or not AAC');
   }
-  if (duration < 4.0) {
-    throw new Error(`Video duration too short: ${duration}s (expected ~5s)`);
+  if (Math.abs(duration - audioDuration) > 1.5) {
+    throw new Error(`Video duration (${duration}s) does not match audio duration (${audioDuration}s)`);
   }
 
-  console.log('=== VERIFICATION PASSED: REAL SAMPLE MP4 CREATED AND VALIDATED SUCCESSFULLY ===');
+  console.log('=== VERIFICATION PASSED: REAL SAMPLE MP4 CREATED AND VALIDATED WITH SPOKEN SPEECH NARRATION ===');
 }
 
 runVerification().catch((err) => {

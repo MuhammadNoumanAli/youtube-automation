@@ -242,7 +242,7 @@ export class RenderingService {
     const width = isShort ? 720 : 1280;
     const height = isShort ? 1280 : 720;
     const fps = dto.fps || 30;
-    const duration = Math.min(30, Math.max(5, Math.round(Number(narration.duration_seconds))));
+    const duration = Math.max(3, Math.min(600, Math.round(Number(narration.duration_seconds))));
 
     // Output destination
     const outFilename = `render_${project.id}_${Date.now()}.mp4`;

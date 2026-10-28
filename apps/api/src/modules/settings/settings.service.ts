@@ -18,6 +18,8 @@ export interface SafeSettingsStatus {
     tts: {
       activeProvider: string;
       mockAvailable: boolean;
+      localSapiAvailable: boolean;
+      voice: string;
       elevenLabsConfigured: boolean;
     };
     youtube: {
@@ -66,6 +68,8 @@ export class SettingsService {
         tts: {
           activeProvider: ttsProvider,
           mockAvailable: true,
+          localSapiAvailable: process.platform === 'win32',
+          voice: this.config.get<string>('TTS_VOICE', 'Microsoft David Desktop'),
           elevenLabsConfigured: Boolean(ttsKey && ttsKey.trim().length > 0),
         },
         youtube: {

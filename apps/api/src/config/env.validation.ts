@@ -101,6 +101,10 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  TTS_VOICE?: string = 'Microsoft David Desktop';
+
+  @IsString()
+  @IsOptional()
   TTS_API_KEY?: string;
 
   @IsString()

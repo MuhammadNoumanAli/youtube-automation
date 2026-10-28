@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,13 +11,17 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Narration, NarrationStatus } from '../../database/entities/narration.entity';
-import { VideoProject, VideoProjectStatus } from '../../database/entities/video-project.entity';
+import { VideoProject } from '../../database/entities/video-project.entity';
 import { Script, ScriptStatus } from '../../database/entities/script.entity';
 import { AuditEvent } from '../../database/entities/audit-event.entity';
 import { MockTtsProvider } from './mock-tts.provider';
+import { LocalSapiTtsProvider } from './local-sapi-tts.provider';
+import { TextToSpeechProvider } from './tts.provider';
 
 @Injectable()
 export class NarrationService {
+  private readonly logger = new Logger(NarrationService.name);
+
   constructor(
     @InjectRepository(Narration)
     private readonly narrationRepo: Repository<Narration>,
@@ -28,6 +33,7 @@ export class NarrationService {
     private readonly auditRepo: Repository<AuditEvent>,
     private readonly configService: ConfigService,
     private readonly mockTtsProvider: MockTtsProvider,
+    private readonly localSapiTtsProvider: LocalSapiTtsProvider,
   ) {}
 
   private getStorageDir(): string {
@@ -37,6 +43,24 @@ export class NarrationService {
       fs.mkdirSync(dir, { recursive: true });
     }
     return dir;
+  }
+
+  getActiveProvider(): TextToSpeechProvider {
+    const configured = this.configService.get<string>('TTS_PROVIDER', 'local').toLowerCase();
+
+    // Explicit mock switch for fast headless testing
+    if (configured === 'mock') {
+      return this.mockTtsProvider;
+    }
+
+    // Windows native Speech API (SAPI) with Microsoft David / Zira Desktop
+    if (process.platform === 'win32') {
+      return this.localSapiTtsProvider;
+    }
+
+    // Fallback if local speech engine is not present
+    this.logger.warn(`No native speech engine available on ${process.platform}; using test mock.`);
+    return this.mockTtsProvider;
   }
 
   async findByProjectId(projectId: string): Promise<Narration[]> {
@@ -73,15 +97,17 @@ export class NarrationService {
       throw new BadRequestException('Cannot generate narration: no script found for this project.');
     }
 
+    const provider = this.getActiveProvider();
     const filename = `${crypto.randomUUID()}.wav`;
     const outputPath = path.join(this.getStorageDir(), filename);
 
-    const result = await this.mockTtsProvider.synthesize(script.content, outputPath);
+    this.logger.log(`Synthesizing narration using provider "${provider.providerName}"...`);
+    const result = await provider.synthesize(script.content, outputPath);
 
     const narration = this.narrationRepo.create({
       video_project_id: projectId,
       script_id: script.id,
-      provider: 'mock',
+      provider: result.provider,
       storage_path: result.filePath,
       duration_seconds: result.durationSeconds,
       status: NarrationStatus.Ready,
@@ -98,7 +124,7 @@ export class NarrationService {
           project_id: projectId,
           script_id: script.id,
           duration: result.durationSeconds,
-          provider: 'mock',
+          provider: result.provider,
         },
       }),
     );
@@ -133,15 +159,15 @@ export class NarrationService {
 
     fs.writeFileSync(destinationPath, fileBuffer);
 
-    // Rough duration estimation or probe
-    const estimatedSeconds = Math.max(5, Math.round(fileBuffer.length / (16000 * 2)));
+    // Accurately probe duration using FFprobe
+    const durationSeconds = await this.localSapiTtsProvider.probeDuration(destinationPath);
 
     const narration = this.narrationRepo.create({
       video_project_id: projectId,
       script_id: null,
       provider: 'user_uploaded',
       storage_path: destinationPath,
-      duration_seconds: estimatedSeconds,
+      duration_seconds: durationSeconds,
       status: NarrationStatus.Ready,
     });
     const saved = await this.narrationRepo.save(narration);
@@ -156,6 +182,7 @@ export class NarrationService {
           project_id: projectId,
           original_filename: originalName,
           size_bytes: fileBuffer.length,
+          duration: durationSeconds,
         },
       }),
     );

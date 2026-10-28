@@ -6,14 +6,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { NarrationService } from './narration.service';
 import { MockTtsProvider } from './mock-tts.provider';
+import { LocalSapiTtsProvider, extractSpokenText } from './local-sapi-tts.provider';
 import { Narration, NarrationStatus } from '../../database/entities/narration.entity';
 import { VideoProject } from '../../database/entities/video-project.entity';
 import { Script, ScriptStatus } from '../../database/entities/script.entity';
 import { AuditEvent } from '../../database/entities/audit-event.entity';
 
-describe('NarrationService', () => {
+describe('NarrationService & Providers', () => {
   let service: NarrationService;
   let mockTts: MockTtsProvider;
+  let localSapiTts: LocalSapiTtsProvider;
 
   const mockNarrationRepo = {
     create: jest.fn().mockImplementation((dto) => ({ id: 'narr-1', ...dto })),
@@ -31,7 +33,7 @@ describe('NarrationService', () => {
       id: 'script-1',
       video_project_id: 'proj-1',
       status: ScriptStatus.Approved,
-      content: 'Hello and welcome to this video about automated production.',
+      content: '[SECTION 1: INTRO]\nWelcome to this automated production video.\n(Visual cue: System architecture diagram)\nToday we explore scalable distributed storage.',
     }),
   };
 
@@ -41,7 +43,11 @@ describe('NarrationService', () => {
   };
 
   const mockConfigService = {
-    get: jest.fn().mockReturnValue('./storage_test'),
+    get: jest.fn((key: string, def?: any) => {
+      if (key === 'STORAGE_ROOT') return './storage_test';
+      if (key === 'TTS_PROVIDER') return 'mock'; // Default to mock in automated test suite for speed
+      return def;
+    }),
   };
 
   beforeEach(async () => {
@@ -50,6 +56,7 @@ describe('NarrationService', () => {
       providers: [
         NarrationService,
         MockTtsProvider,
+        LocalSapiTtsProvider,
         { provide: getRepositoryToken(Narration), useValue: mockNarrationRepo },
         { provide: getRepositoryToken(VideoProject), useValue: mockProjectRepo },
         { provide: getRepositoryToken(Script), useValue: mockScriptRepo },
@@ -60,6 +67,7 @@ describe('NarrationService', () => {
 
     service = module.get<NarrationService>(NarrationService);
     mockTts = module.get<MockTtsProvider>(MockTtsProvider);
+    localSapiTts = module.get<LocalSapiTtsProvider>(LocalSapiTtsProvider);
   });
 
   afterAll(() => {
@@ -71,59 +79,88 @@ describe('NarrationService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+    expect(localSapiTts).toBeDefined();
   });
 
-  it('MockTtsProvider should generate a valid RIFF/WAVE header and PCM data', async () => {
-    const testDir = path.resolve('./storage_test/narration');
-    fs.mkdirSync(testDir, { recursive: true });
-    const testFile = path.join(testDir, 'test_mock.wav');
+  describe('extractSpokenText', () => {
+    it('should strip section headers, visual cues, and markdown formatting', () => {
+      const rawScript = `
+# Introduction to Scalable Architecture
+[SECTION 1: HOOK & INTRO]
+Welcome to YouTube Automation Studio!
+(Visual cue: Zoom in on server cluster)
+**In this video**, we examine how distributed pipelines maintain zero-cost operations.
+Visual: Diagram showing message queues.
+[OUTRO]
+Thank you for watching and subscribing!
+`;
+      const cleaned = extractSpokenText(rawScript);
 
-    const result = await mockTts.synthesize('This is a test script with eight words here.', testFile);
-
-    expect(result.format).toBe('wav');
-    expect(result.provider).toBe('mock');
-    expect(result.durationSeconds).toBeGreaterThanOrEqual(5);
-    expect(fs.existsSync(testFile)).toBe(true);
-
-    const fileContent = fs.readFileSync(testFile);
-    expect(fileContent.toString('ascii', 0, 4)).toBe('RIFF');
-    expect(fileContent.toString('ascii', 8, 12)).toBe('WAVE');
-    expect(fileContent.toString('ascii', 12, 16)).toBe('fmt ');
-    expect(fileContent.readUInt16LE(20)).toBe(1); // PCM format
-    expect(fileContent.readUInt32LE(24)).toBe(44100); // 44.1kHz sample rate
-    expect(fileContent.readUInt16LE(34)).toBe(16); // 16 bits per sample
+      expect(cleaned).not.toContain('[SECTION 1: HOOK & INTRO]');
+      expect(cleaned).not.toContain('(Visual cue: Zoom in on server cluster)');
+      expect(cleaned).not.toContain('[OUTRO]');
+      expect(cleaned).not.toContain('# Introduction');
+      expect(cleaned).not.toContain('**');
+      expect(cleaned).toContain('Welcome to YouTube Automation Studio!');
+      expect(cleaned).toContain('In this video, we examine how distributed pipelines maintain zero-cost operations.');
+      expect(cleaned).toContain('Thank you for watching and subscribing!');
+    });
   });
 
-  it('should generate narration audio record from approved script', async () => {
-    const result = await service.generate('proj-1');
+  describe('MockTtsProvider', () => {
+    it('MockTtsProvider should generate a valid RIFF/WAVE header and PCM data for automated tests', async () => {
+      const testDir = path.resolve('./storage_test/narration');
+      fs.mkdirSync(testDir, { recursive: true });
+      const testFile = path.join(testDir, 'test_mock.wav');
 
-    expect(result.video_project_id).toBe('proj-1');
-    expect(result.status).toBe(NarrationStatus.Ready);
-    expect(result.provider).toBe('mock');
-    expect(mockNarrationRepo.save).toHaveBeenCalled();
-    expect(mockAuditRepo.save).toHaveBeenCalled();
+      const result = await mockTts.synthesize('This is a test script with eight words here.', testFile);
+
+      expect(result.format).toBe('wav');
+      expect(result.provider).toBe('mock');
+      expect(result.durationSeconds).toBeGreaterThanOrEqual(5);
+      expect(fs.existsSync(testFile)).toBe(true);
+
+      const fileContent = fs.readFileSync(testFile);
+      expect(fileContent.toString('ascii', 0, 4)).toBe('RIFF');
+      expect(fileContent.toString('ascii', 8, 12)).toBe('WAVE');
+      expect(fileContent.toString('ascii', 12, 16)).toBe('fmt ');
+      expect(fileContent.readUInt16LE(20)).toBe(1); // PCM format
+      expect(fileContent.readUInt32LE(24)).toBe(44100); // 44.1kHz sample rate
+      expect(fileContent.readUInt16LE(34)).toBe(16); // 16 bits per sample
+    });
   });
 
-  it('should import voiceover file with allowed audio extension', async () => {
-    const dummyAudio = Buffer.from('RIFF....WAVEfmt ....data....');
+  describe('NarrationService', () => {
+    it('should generate narration audio record from approved script', async () => {
+      const result = await service.generate('proj-1');
 
-    const result = await service.importVoiceover(
-      'proj-1',
-      dummyAudio,
-      'my_voiceover.mp3',
-      'audio/mpeg',
-    );
+      expect(result.video_project_id).toBe('proj-1');
+      expect(result.status).toBe(NarrationStatus.Ready);
+      expect(mockNarrationRepo.save).toHaveBeenCalled();
+      expect(mockAuditRepo.save).toHaveBeenCalled();
+    });
 
-    expect(result.provider).toBe('user_uploaded');
-    expect(result.status).toBe(NarrationStatus.Ready);
-    expect(mockNarrationRepo.save).toHaveBeenCalled();
-  });
+    it('should import voiceover file with allowed audio extension and probe duration', async () => {
+      const dummyAudio = Buffer.from('RIFF....WAVEfmt ....data....');
 
-  it('should reject invalid voiceover extensions like .exe or .sh', async () => {
-    const dummyAudio = Buffer.from('echo malicious');
+      const result = await service.importVoiceover(
+        'proj-1',
+        dummyAudio,
+        'my_voiceover.mp3',
+        'audio/mpeg',
+      );
 
-    await expect(
-      service.importVoiceover('proj-1', dummyAudio, 'payload.sh', 'text/x-sh'),
-    ).rejects.toThrow(BadRequestException);
+      expect(result.provider).toBe('user_uploaded');
+      expect(result.status).toBe(NarrationStatus.Ready);
+      expect(mockNarrationRepo.save).toHaveBeenCalled();
+    });
+
+    it('should reject invalid voiceover extensions like .exe or .sh', async () => {
+      const dummyAudio = Buffer.from('echo malicious');
+
+      await expect(
+        service.importVoiceover('proj-1', dummyAudio, 'payload.sh', 'text/x-sh'),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 });

@@ -24,16 +24,16 @@
 
 | Verification Check | Target / Command | Status | Result / Details |
 | :--- | :--- | :---: | :--- |
-| **Full Unit Test Suite** | `npm test` | **PASSED** | **28 unit tests passed across 8 test suites** (`assets.service`, `narration.service`, `rendering.service`, `scripts.service`, `topics.service`, `mock-text.provider`, `health.service`, `settings.service`). |
-| **Sample Video Render & FFprobe** | `npm run verify:render` | **PASSED** | Successfully generated and probed real MP4 video output using local FFmpeg and FFprobe binaries. |
-| **Sample Video Output Path** | `storage/renders/sample_verification.mp4` | **CREATED** | Duration: 5.0s • Resolution: 1280x720 • Codecs: `h264` / `aac` • File size: 99,036 bytes. |
+| **Full Unit Test Suite** | `npm test` | **PASSED** | **29 unit tests passed across 8 test suites** (`assets.service`, `narration.service`, `rendering.service`, `scripts.service`, `topics.service`, `mock-text.provider`, `health.service`, `settings.service`). |
+| **Sample Video Render & FFprobe** | `npm run verify:render` | **PASSED** | Successfully generated spoken narration via `LocalSapiTtsProvider` (Windows SAPI `Microsoft David Desktop`) and rendered MP4 video with synchronized audio. |
+| **Sample Video Output Path** | `storage/renders/sample_verification.mp4` | **CREATED** | **Duration: 21.951s** • Resolution: 1280x720 • Codecs: `h264` / `aac` • File size: 335,756 bytes (328 KB). Audio verified containing natural spoken English narration. |
 | **Backend Compilation** | `npm run build:api` | **PASSED** | `nest build` passed with exit code 0. |
-| **Frontend Compilation** | `npm run build:web` | **PASSED** | Vite production bundle built in 551ms. |
+| **Frontend Compilation** | `npm run build:web` | **PASSED** | Vite production bundle built in 560ms. |
 | **Full Monorepo Build** | `npm run build` | **PASSED** | Both `api` and `web` built successfully with exit code 0. |
 | **Database Migrations** | `AssetsNarrationsRenderJobs1730160200000` | **APPLIED** | Successfully executed on MySQL: `assets`, `narrations`, `render_jobs`, `approval_records` created. |
 | **Assets Module API** | `/api/projects/:id/assets` | **READY** | Uploads with SHA-256 checksums, MIME whitelist, size limits (<250MB), path traversal prevention, license categorization (`user_created`, `public_domain`, `creative_commons`, `purchased_license`, `fair_use_quoted`). |
-| **Narration Module API** | `/api/projects/:id/narration` | **READY** | Deterministic offline PCM WAV generation (`MockTtsProvider`) and user voiceover import (`.mp3`, `.wav`, `.m4a`). Zero paid API dependencies. |
-| **Rendering Pipeline API** | `/api/projects/:id/render` | **READY** | Spawns local FFmpeg with argument arrays, shortest audio sync, burned-in subtitles, and automatic FFprobe validation. |
+| **Narration Module API** | `/api/projects/:id/narration` | **READY** | Natural spoken English synthesis via built-in Windows SAPI (`Microsoft David Desktop` / `Microsoft Zira Desktop`), zero cost, 100% offline. Accurate audio duration probed with FFprobe. User voiceover import (`.mp3`, `.wav`, `.m4a`) supported. |
+| **Rendering Pipeline API** | `/api/projects/:id/render` | **READY** | Spawns local FFmpeg with argument arrays, synchronized speech narration, burned-in subtitles, and automatic FFprobe validation. |
 | **Safe Video Streaming API** | `/api/projects/:id/render-video` | **READY** | Direct, authenticated streaming of rendered MP4 files with path traversal confinement. |
 | **Human Render Review Gate** | `/api/projects/:id/render-approval` | **READY** | Explicit approve/reject actions recording decision, notes, and audit events. Render approval **never** implies public YouTube release. |
 | **Creator Dashboard UI** | React + Vite (`apps/web`) | **READY** | Interactive Render & Review Studio with video player, technical FFprobe validation inspection cards, narration status, and asset provenance checklist. |

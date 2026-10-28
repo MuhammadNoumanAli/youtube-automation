@@ -39,6 +39,8 @@ interface SettingsData {
     tts: {
       activeProvider: string;
       mockAvailable: boolean;
+      localSapiAvailable?: boolean;
+      voice?: string;
       elevenLabsConfigured: boolean;
     };
     youtube: {
@@ -807,7 +809,11 @@ export function App() {
                 </div>
                 <div className="metric-row">
                   <span className="metric-label">TTS Audio Synthesis</span>
-                  <span className="metric-value font-mono">Mock (Deterministic PCM WAV)</span>
+                  <span className="metric-value font-mono">
+                    {settings?.providers.tts.activeProvider === 'local'
+                      ? `Local Windows SAPI (${settings.providers.tts.voice || 'David'})`
+                      : 'Mock Test Tone'}
+                  </span>
                 </div>
                 <div className="metric-row">
                   <span className="metric-label">Script Generation</span>
@@ -1536,7 +1542,7 @@ export function App() {
                     <div className="card-header">
                       <span className="card-title">Narration Voiceover Audio</span>
                       <button onClick={handleGenerateNarration} className="btn-secondary" style={{ fontSize: '12px' }}>
-                        ⚡ Synthesize Mock Audio
+                        ⚡ Synthesize Spoken Narration ({settings?.providers.tts.activeProvider === 'local' ? (settings?.providers.tts.voice || 'Local SAPI') : (settings?.providers.tts.activeProvider || 'Local')})
                       </button>
                     </div>
 
