@@ -12,6 +12,10 @@ import { ResearchModule } from './modules/research/research.module';
 import { AiProvidersModule } from './modules/ai-providers/ai-providers.module';
 import { ScriptsModule } from './modules/scripts/scripts.module';
 
+import { AssetsModule } from './modules/assets/assets.module';
+import { NarrationModule } from './modules/narration/narration.module';
+import { RenderingModule } from './modules/rendering/rendering.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,6 +35,9 @@ import { ScriptsModule } from './modules/scripts/scripts.module';
     ResearchModule,
     AiProvidersModule,
     ScriptsModule,
+    AssetsModule,
+    NarrationModule,
+    RenderingModule,
   ],
 })
 export class AppModule {}

@@ -48,6 +48,9 @@ async function bootstrap() {
     .addTag('Projects', 'Video project lifecycle and state machine')
     .addTag('Research', 'Factual source references and citation verification')
     .addTag('Scripts', 'Script generation, scene plans, and human approval gate')
+    .addTag('Assets', 'Media assets provenance, licensing, and checksum storage')
+    .addTag('Narration', 'Deterministic TTS synthesis and voiceover audio import')
+    .addTag('Rendering', 'Local FFmpeg video rendering pipeline, FFprobe validation, and review gate')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

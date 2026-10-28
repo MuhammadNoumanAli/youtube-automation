@@ -14,6 +14,7 @@
     "build": "npm run build:api && npm run build:web",
     "test:api": "npm run test --workspace=api",
     "test": "npm run test:api",
+    "verify:render": "ts-node -r tsconfig-paths/register apps/api/scripts/verify-sample-render.ts",
     "lint": "npm run lint --workspace=api"
   },
   "keywords": [

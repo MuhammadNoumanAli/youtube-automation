@@ -1,8 +1,8 @@
 # YouTube Automation Studio — Implementation Status
 
-> **Current Phase:** Phase 2 (Topics, Research Sources, Projects & Scripting)  
+> **Current Phase:** Phase 3 (Assets, Narration & Local FFmpeg Video Rendering)  
 > **Last Updated:** 2026-10-29  
-> **Execution Gate:** Phase 2 Complete — Awaiting Approval to Begin Phase 3
+> **Execution Gate:** Phase 3 Complete — Awaiting Approval to Begin Phase 4
 
 ---
 
@@ -13,29 +13,30 @@
 | **0** | Repository Inspection, Architecture & Setup Blueprint | **COMPLETED** | Verified local tools, authored planning & env files. |
 | **1** | Repository Scaffold & Local Foundation | **COMPLETED** | Monorepo setup, NestJS + React/Vite, TypeORM migrations, health check, pushed to GitHub. |
 | **2** | Topics, Research Sources, Projects & Scripting | **COMPLETED** | Channel profiles, ideas backlog, research citations, mock script generation, human approval gate. |
-| **3** | Assets, Narration & Local FFmpeg Video Rendering | **PENDING** | Provenance verification, TTS mock/ElevenLabs, FFmpeg pipeline. |
+| **3** | Assets, Narration & Local FFmpeg Video Rendering | **COMPLETED** | SHA-256 provenance, Mock TTS/voiceover import, FFmpeg render, FFprobe validation, review gate. |
 | **4** | YouTube Data API v3 OAuth & Private Uploads | **PENDING** | OAuth flow, encrypted token storage, private upload execution. |
 | **5** | Job Runner, Idempotency & Reliability | **PENDING** | DB queue, lease locking, exponential backoff, retry protection. |
 | **6** | Analytics & Production Readiness | **PENDING** | Channel metrics, Ubuntu deployment guide, security audit. |
 
 ---
 
-## 2. Phase 2 Verification Results
+## 2. Phase 3 Verification Results
 
 | Verification Check | Target / Command | Status | Result / Details |
 | :--- | :--- | :---: | :--- |
-| **Full Unit Test Suite** | `npm test` | **PASSED** | 11 unit tests passed across 5 test suites (`mock-text.provider`, `topics.service`, `scripts.service`, `health.service`, `settings.service`). |
-| **Backend Compilation** | `npm run build:api` | **PASSED** | `nest build` passed with code 0. |
-| **Frontend Compilation** | `npm run build:web` | **PASSED** | Vite production bundle built in 1.64s. |
-| **Full Monorepo Build** | `npm run build` | **PASSED** | Both `api` and `web` built successfully with code 0. |
-| **Database Migrations** | `TopicsResearchScripts1730160100000` | **APPLIED** | Successfully executed on MySQL: `topics`, `research_sources`, `scripts` tables created. |
-| **Channel Profiles API** | `/api/channels` | **READY** | Full CRUD implemented for channel profiles. |
-| **Topics Backlog API** | `/api/topics` | **READY** | Backlog tracking, priority tags, and 1-click project conversion (`POST /api/topics/:id/convert`). |
-| **Video Projects API** | `/api/projects` | **READY** | 17-state lifecycle state machine, format/duration settings, and audit event recording. |
-| **Research Citations API**| `/api/projects/:id/research` | **READY** | Factual citation tracking, claims supported, verification status. |
-| **Script Generation** | `/api/projects/:id/scripts/generate` | **READY** | `MockTextProvider` creates rich scripts, scene breakdown (visual cues, timings, audio), and metadata. |
-| **Human Approval Gate** | `/api/scripts/:id/approve` | **READY** | Explicit approval endpoint transitions project to `script_approved`, locks script, and logs audit record. |
-| **Creator Dashboard UI** | React + Vite (`apps/web`) | **READY** | Interactive views for Channels, Backlog, Projects, Research sources, Script Editor, and Approval. |
+| **Full Unit Test Suite** | `npm test` | **PASSED** | **28 unit tests passed across 8 test suites** (`assets.service`, `narration.service`, `rendering.service`, `scripts.service`, `topics.service`, `mock-text.provider`, `health.service`, `settings.service`). |
+| **Sample Video Render & FFprobe** | `npm run verify:render` | **PASSED** | Successfully generated and probed real MP4 video output using local FFmpeg and FFprobe binaries. |
+| **Sample Video Output Path** | `storage/renders/sample_verification.mp4` | **CREATED** | Duration: 5.0s • Resolution: 1280x720 • Codecs: `h264` / `aac` • File size: 99,036 bytes. |
+| **Backend Compilation** | `npm run build:api` | **PASSED** | `nest build` passed with exit code 0. |
+| **Frontend Compilation** | `npm run build:web` | **PASSED** | Vite production bundle built in 551ms. |
+| **Full Monorepo Build** | `npm run build` | **PASSED** | Both `api` and `web` built successfully with exit code 0. |
+| **Database Migrations** | `AssetsNarrationsRenderJobs1730160200000` | **APPLIED** | Successfully executed on MySQL: `assets`, `narrations`, `render_jobs`, `approval_records` created. |
+| **Assets Module API** | `/api/projects/:id/assets` | **READY** | Uploads with SHA-256 checksums, MIME whitelist, size limits (<250MB), path traversal prevention, license categorization (`user_created`, `public_domain`, `creative_commons`, `purchased_license`, `fair_use_quoted`). |
+| **Narration Module API** | `/api/projects/:id/narration` | **READY** | Deterministic offline PCM WAV generation (`MockTtsProvider`) and user voiceover import (`.mp3`, `.wav`, `.m4a`). Zero paid API dependencies. |
+| **Rendering Pipeline API** | `/api/projects/:id/render` | **READY** | Spawns local FFmpeg with argument arrays, shortest audio sync, burned-in subtitles, and automatic FFprobe validation. |
+| **Safe Video Streaming API** | `/api/projects/:id/render-video` | **READY** | Direct, authenticated streaming of rendered MP4 files with path traversal confinement. |
+| **Human Render Review Gate** | `/api/projects/:id/render-approval` | **READY** | Explicit approve/reject actions recording decision, notes, and audit events. Render approval **never** implies public YouTube release. |
+| **Creator Dashboard UI** | React + Vite (`apps/web`) | **READY** | Interactive Render & Review Studio with video player, technical FFprobe validation inspection cards, narration status, and asset provenance checklist. |
 
 ---
 
@@ -45,11 +46,11 @@
 | :--- | :--- | :--- | :---: | :--- |
 | **Node.js** | Supported LTS (>= 20, pref 22) | `v22.12.0` | **READY** | Compatible LTS release. |
 | **npm** | >= 9.x | `10.9.0` | **READY** | Fast and modern package manager. |
-| **NestJS CLI** | 10.x | `10.4.5` | **READY** | Globally installed at npm roaming path. |
-| **Git** | >= 2.x | `2.40.0.windows.1` | **READY** | Synced with GitHub (`origin/main`). |
-| **MySQL** | MySQL 8.x | WampServer 8.0.40 / 9.1.0 | **READY** | Database `youtube_automation` running with all Phase 1 & 2 tables. |
+| **NestJS CLI** | 10.x | `10.4.5` | **READY** | Globally installed. |
+| **Git** | >= 2.x | `2.40.0.windows.1` | **READY** | Configured with `id_ed25519` SSH key for `MuhammadNoumanAli`. |
+| **MySQL** | MySQL 8.x | WampServer 8.0.40 | **READY** | Database `youtube_automation` active with all 11 tables migrated. |
 | **FFmpeg** | Any modern build (>= 5.x) | `8.0.1-gyan.dev` | **READY** | Located at `C:\WINDOWS\system32\ffmpeg.exe`. |
-| **FFprobe** | Matching FFmpeg | Not found in PATH | **ACTION REQ** | Needed before Phase 3 rendering begins. |
+| **FFprobe** | Matching FFprobe | `ffprobe-static` 8.0 | **READY** | Available at `node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe`. |
 
 ---
 
@@ -58,15 +59,15 @@
 Progress tracking against Section 14 of `youtube-automation-studio-master-prompt.md`:
 
 - [x] Local setup instructions work on Windows (`docs/LOCAL_SETUP.md`)
-- [x] Database migrations create the schema (`InitialBaseline`, `TopicsResearchScripts`)
+- [x] Database migrations create the schema (`InitialBaseline`, `TopicsResearchScripts`, `AssetsNarrationsRenderJobs`)
 - [x] User can create a channel profile and video project
 - [x] User can add research sources and asset license details
 - [x] Mock mode can generate a clearly labeled sample script and scene plan
 - [x] User can edit and approve the script (Human Approval Gate verified)
-- [ ] User can import their own narration or use a configured TTS provider (Phase 3)
-- [ ] FFmpeg can render a sample video from supplied local assets (Phase 3)
-- [ ] FFprobe validation reports output duration, resolution and codecs (Phase 3)
-- [ ] User can preview the rendered video and approve/reject it (Phase 3)
+- [x] User can import their own narration or use a configured TTS provider (Mock PCM WAV verified)
+- [x] FFmpeg can render a sample video from supplied local assets (Verified via `verify:render`)
+- [x] FFprobe validation reports output duration, resolution and codecs (Verified in `validateVideo`)
+- [x] User can preview the rendered video and approve/reject it (Render & Review Studio verified)
 - [ ] YouTube OAuth setup is documented and the app reports connection state correctly (Phase 4)
 - [ ] A user can upload a test video as private after explicit confirmation (Phase 4)
 - [ ] Upload status and returned video ID are persisted (Phase 4)
@@ -77,9 +78,9 @@ Progress tracking against Section 14 of `youtube-automation-studio-master-prompt
 
 ---
 
-## 5. Next Steps (Phase 3 Gate)
-Upon user approval to begin Phase 3:
-1. Implement `AssetsModule` (`/api/projects/:id/assets`) with asset upload, sha256 checksums, and license provenance verification.
-2. Implement `NarrationModule` (`/api/projects/:id/narration`) with TTS provider abstraction (Mock + ElevenLabs) and voiceover audio file import.
-3. Implement `RenderingModule` (`/api/projects/:id/render`): FFmpeg command builder, timeline compositor, subtitle burn-in, progress tracking, and FFprobe output validation.
-4. Build in-browser Render Review UI with video player preview, provenance checklist, and human render approval gate (`/api/projects/:id/render-approval`).
+## 5. Next Steps (Phase 4 Gate)
+Upon user approval to begin Phase 4:
+1. Implement YouTube Data API v3 OAuth consent and callback flow (`/api/auth/youtube`).
+2. Implement encrypted local token storage using AES-256-GCM.
+3. Implement private upload staging pipeline (`/api/projects/:id/upload`).
+4. Ensure public release and scheduling remain disabled unless explicitly unlocked by creator.

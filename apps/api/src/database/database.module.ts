@@ -7,6 +7,10 @@ import { AuditEvent } from './entities/audit-event.entity';
 import { Topic } from './entities/topic.entity';
 import { ResearchSource } from './entities/research-source.entity';
 import { Script } from './entities/script.entity';
+import { Asset } from './entities/asset.entity';
+import { Narration } from './entities/narration.entity';
+import { RenderJob } from './entities/render-job.entity';
+import { ApprovalRecord } from './entities/approval-record.entity';
 
 export const entities = [
   ChannelProfile,
@@ -15,6 +19,10 @@ export const entities = [
   Topic,
   ResearchSource,
   Script,
+  Asset,
+  Narration,
+  RenderJob,
+  ApprovalRecord,
 ];
 
 @Module({
