@@ -1,0 +1,28 @@
+{
+  "name": "youtube-automation-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Creator studio for planning, producing, reviewing, and publishing original faceless YouTube videos",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "start:api": "npm run start:dev --workspace=api",
+    "start:web": "npm run dev --workspace=web",
+    "build:api": "npm run build --workspace=api",
+    "build:web": "npm run build --workspace=web",
+    "build": "npm run build:api && npm run build:web",
+    "test:api": "npm run test --workspace=api",
+    "test": "npm run test:api",
+    "lint": "npm run lint --workspace=api"
+  },
+  "keywords": [
+    "youtube",
+    "automation",
+    "nestjs",
+    "react",
+    "ffmpeg"
+  ],
+  "author": "MuhammadNoumanAli",
+  "license": "UNLICENSED"
+}
