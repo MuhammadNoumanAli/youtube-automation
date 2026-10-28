@@ -43,6 +43,11 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('Health', 'System health check and readiness probe')
     .addTag('Settings', 'Safe configuration and feature toggle status')
+    .addTag('Channels', 'YouTube channel profile configuration')
+    .addTag('Topics', 'Content ideas and topic backlog management')
+    .addTag('Projects', 'Video project lifecycle and state machine')
+    .addTag('Research', 'Factual source references and citation verification')
+    .addTag('Scripts', 'Script generation, scene plans, and human approval gate')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

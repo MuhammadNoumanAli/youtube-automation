@@ -5,6 +5,12 @@ import { validate } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './modules/health/health.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { ChannelsModule } from './modules/channels/channels.module';
+import { TopicsModule } from './modules/topics/topics.module';
+import { VideosModule } from './modules/videos/videos.module';
+import { ResearchModule } from './modules/research/research.module';
+import { AiProvidersModule } from './modules/ai-providers/ai-providers.module';
+import { ScriptsModule } from './modules/scripts/scripts.module';
 
 @Module({
   imports: [
@@ -19,6 +25,12 @@ import { SettingsModule } from './modules/settings/settings.module';
     DatabaseModule,
     HealthModule,
     SettingsModule,
+    ChannelsModule,
+    TopicsModule,
+    VideosModule,
+    ResearchModule,
+    AiProvidersModule,
+    ScriptsModule,
   ],
 })
 export class AppModule {}

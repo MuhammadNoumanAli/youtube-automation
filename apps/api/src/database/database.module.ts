@@ -4,6 +4,18 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChannelProfile } from './entities/channel-profile.entity';
 import { VideoProject } from './entities/video-project.entity';
 import { AuditEvent } from './entities/audit-event.entity';
+import { Topic } from './entities/topic.entity';
+import { ResearchSource } from './entities/research-source.entity';
+import { Script } from './entities/script.entity';
+
+export const entities = [
+  ChannelProfile,
+  VideoProject,
+  AuditEvent,
+  Topic,
+  ResearchSource,
+  Script,
+];
 
 @Module({
   imports: [
@@ -17,13 +29,13 @@ import { AuditEvent } from './entities/audit-event.entity';
         username: config.get<string>('DB_USERNAME', 'root'),
         password: config.get<string>('DB_PASSWORD', ''),
         database: config.get<string>('DB_DATABASE', 'youtube_automation'),
-        entities: [ChannelProfile, VideoProject, AuditEvent],
+        entities,
         synchronize: false,
         logging: config.get<boolean>('DB_LOGGING', false),
         autoLoadEntities: true,
       }),
     }),
-    TypeOrmModule.forFeature([ChannelProfile, VideoProject, AuditEvent]),
+    TypeOrmModule.forFeature(entities),
   ],
   exports: [TypeOrmModule],
 })
