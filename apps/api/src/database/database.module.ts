@@ -11,6 +11,7 @@ import { Asset } from './entities/asset.entity';
 import { Narration } from './entities/narration.entity';
 import { RenderJob } from './entities/render-job.entity';
 import { ApprovalRecord } from './entities/approval-record.entity';
+import { UploadRecord } from './entities/upload-record.entity';
 
 export const entities = [
   ChannelProfile,
@@ -23,6 +24,7 @@ export const entities = [
   Narration,
   RenderJob,
   ApprovalRecord,
+  UploadRecord,
 ];
 
 @Module({

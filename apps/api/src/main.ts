@@ -51,6 +51,7 @@ async function bootstrap() {
     .addTag('Assets', 'Media assets provenance, licensing, and checksum storage')
     .addTag('Narration', 'Deterministic TTS synthesis and voiceover audio import')
     .addTag('Rendering', 'Local FFmpeg video rendering pipeline, FFprobe validation, and review gate')
+    .addTag('YouTube', 'Google OAuth 2.0 authorization, AES-256 token storage, and private video uploads')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
@@ -58,7 +59,12 @@ async function bootstrap() {
     customSiteTitle: 'YouTube Automation Studio API Docs',
   });
 
-  await app.listen(port);
+  // Bind to loopback by default: the dashboard API has no authentication yet (see docs/SECURITY.md).
+  const host = configService.get<string>('HOST', '127.0.0.1');
+  await app.listen(port, host);
+  if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1') {
+    logger.warn(`API is bound to ${host} with NO authentication — anyone on your network can reach it.`);
+  }
   logger.log(`Server running on http://localhost:${port}/api`);
   logger.log(`Swagger documentation available at http://localhost:${port}/api/docs`);
 }

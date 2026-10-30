@@ -37,6 +37,10 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  HOST: string = '127.0.0.1';
+
+  @IsString()
+  @IsOptional()
   WEB_ORIGIN: string = 'http://localhost:5173';
 
   @IsString()

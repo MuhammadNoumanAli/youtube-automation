@@ -28,7 +28,10 @@ export class ChannelProfile {
   @Column({ type: 'varchar', length: 100, nullable: true })
   youtube_channel_id!: string | null;
 
-  @Column({ type: 'text', nullable: true })
+  // select: false keeps the encrypted token blob out of every normal query
+  // (e.g. GET /api/channels, project relations). Only YouTubeOAuthService
+  // loads it explicitly.
+  @Column({ type: 'text', nullable: true, select: false })
   encrypted_oauth_tokens!: string | null;
 
   @OneToMany(() => VideoProject, (project) => project.channel_profile)

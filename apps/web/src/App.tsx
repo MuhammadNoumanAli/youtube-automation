@@ -202,8 +202,47 @@ interface BinaryStatus {
   ffprobe: { path: string; available: boolean };
 }
 
+// Mirrors apps/api/src/database/entities/upload-record.entity.ts
+interface UploadRecord {
+  id: string;
+  video_project_id: string;
+  channel_profile_id: string;
+  youtube_video_id: string | null;
+  privacy_status: 'private';
+  upload_status: 'pending_approval' | 'approved' | 'uploading' | 'uploaded_private' | 'failed';
+  youtube_title: string;
+  upload_attempts: number;
+  error_code: string | null;
+  error_message: string | null;
+  last_attempt_at: string | null;
+  uploaded_at: string | null;
+  created_at: string;
+}
+
+// Mirrors YouTubeConnectionStatus in apps/api/src/modules/youtube/youtube-oauth.service.ts
+interface YouTubeConnectionStatus {
+  connected: boolean;
+  channel_profile_id: string;
+  youtube_channel_id: string | null;
+  channel_title: string | null;
+  token_status: 'valid' | 'expired' | 'missing';
+  expiry_date: string | null;
+  has_refresh_token: boolean;
+  upload_scope_granted: boolean;
+}
+
+const MOCK_VIDEO_ID_PREFIX = 'mock_private_';
+const isMockUpload = (rec: UploadRecord | null) => Boolean(rec?.youtube_video_id?.startsWith(MOCK_VIDEO_ID_PREFIX));
+const UPLOAD_APPROVED_STATUSES = ['ready_to_upload', 'uploading', 'uploaded_private'];
+
 export function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'channels' | 'ideas' | 'projects' | 'render' | 'upload' | 'jobs'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'channels' | 'ideas' | 'projects' | 'render' | 'upload' | 'jobs'>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('tab') === 'upload' ? 'upload' : 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
+  });
   const [health, setHealth] = useState<HealthData | null>(null);
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -225,6 +264,21 @@ export function App() {
   const [binaries, setBinaries] = useState<BinaryStatus | null>(null);
   const [rendering, setRendering] = useState(false);
   const [renderApprovalNotes, setRenderApprovalNotes] = useState('Audio synced, burned-in subtitles verified, pacing approved.');
+
+  // Phase 4 state
+  const [ytStatus, setYtStatus] = useState<YouTubeConnectionStatus | null>(null);
+  const [uploadRecord, setUploadRecord] = useState<UploadRecord | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadApprovalNotes, setUploadApprovalNotes] = useState('Reviewed final render, verified media integrity and approved strictly private upload.');
+  const [uploadMetadata, setUploadMetadata] = useState({
+    title: '',
+    description: '',
+    tags: '',
+    // Creator declarations — deliberately start unset; never inferred automatically
+    made_for_kids: '' as '' | 'yes' | 'no',
+    contains_synthetic_media: '' as '' | 'yes' | 'no',
+  });
+  const [confirmUploadModal, setConfirmUploadModal] = useState(false);
 
   // Forms state
   const [newChannel, setNewChannel] = useState({ name: '', niche: '', language: 'en' });
@@ -308,21 +362,54 @@ export function App() {
     }
   };
 
+  const fetchYouTubeStatus = async (channelId: string) => {
+    try {
+      const res = await fetch(`/api/youtube/channel-status/${channelId}`);
+      if (res.ok) setYtStatus(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchUploadStatus = async (projectId: string) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/upload-status`);
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.trim().length > 0) {
+          setUploadRecord(JSON.parse(text));
+        } else {
+          setUploadRecord(null);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const fetchProjectDetails = async (projectId: string) => {
     try {
-      const [srcRes, scRes, assetRes, narrRes, rendRes] = await Promise.all([
+      const [srcRes, scRes, assetRes, narrRes, rendRes, upRes] = await Promise.all([
         fetch(`/api/projects/${projectId}/research`),
         fetch(`/api/projects/${projectId}/scripts`),
         fetch(`/api/projects/${projectId}/assets`),
         fetch(`/api/projects/${projectId}/narration`),
         fetch(`/api/projects/${projectId}/render-status`),
+        fetch(`/api/projects/${projectId}/upload-status`),
       ]);
       if (srcRes.ok) setSources(await srcRes.json());
       if (scRes.ok) {
         const scriptList: Script[] = await scRes.json();
         setScripts(scriptList);
         if (scriptList.length > 0) {
-          setActiveScript(scriptList[0]);
+          const sc = scriptList[0];
+          setActiveScript(sc);
+          setUploadMetadata((prev) => ({
+            ...prev,
+            title: prev.title || sc.metadata_json?.title || '',
+            description: prev.description || sc.metadata_json?.description || '',
+            tags: prev.tags || sc.metadata_json?.tags?.join(', ') || '',
+          }));
         } else {
           setActiveScript(null);
         }
@@ -330,6 +417,10 @@ export function App() {
       if (assetRes.ok) setAssets(await assetRes.json());
       if (narrRes.ok) setNarrations(await narrRes.json());
       if (rendRes.ok) setLatestRender(await rendRes.json());
+      if (upRes.ok) {
+        const upText = await upRes.text();
+        setUploadRecord(upText && upText.trim().length > 0 ? JSON.parse(upText) : null);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -344,10 +435,31 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const proj = selectedProjectId ? projects.find((p) => p.id === selectedProjectId) : undefined;
     if (selectedProjectId) {
       fetchProjectDetails(selectedProjectId);
     }
-  }, [selectedProjectId]);
+    // Show connection state for the selected project's channel, or the first channel profile
+    const channelId = proj?.channel_profile_id || (channels.length > 0 ? channels[0].id : null);
+    if (channelId) {
+      fetchYouTubeStatus(channelId);
+    } else {
+      setYtStatus(null);
+    }
+  }, [selectedProjectId, projects, channels]);
+
+  // Clean the ?tab=upload&youtube=connected params left by the OAuth callback redirect
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('youtube') === 'connected') setFeedbackMsg('✓ YouTube channel connected.');
+      if (params.has('tab') || params.has('youtube')) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const handleCreateChannel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -646,6 +758,147 @@ export function App() {
     }
   };
 
+  const handleConnectYouTube = async () => {
+    const proj = projects.find((p) => p.id === selectedProjectId);
+    let channelId = proj?.channel_profile_id || (channels.length > 0 ? channels[0].id : null);
+
+    // If no channel exists yet in the database, automatically provision one so user isn't blocked
+    if (!channelId) {
+      try {
+        const createRes = await fetch('/api/channels', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'Primary Studio Channel',
+            niche: 'AI & Automation Engineering',
+            language: 'en',
+          }),
+        });
+        if (createRes.ok) {
+          const newChan = await createRes.json();
+          channelId = newChan.id;
+          await fetchChannels();
+        }
+      } catch (e) {
+        console.error('Failed to auto-create channel profile:', e);
+      }
+    }
+
+    if (!channelId) {
+      alert('Please create a channel profile first under the Channel Profiles tab.');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/youtube/auth-url?channelId=${channelId}`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to generate authorization URL');
+      }
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      alert(`OAuth Error: ${err.message}`);
+    }
+  };
+
+  const handleDisconnectYouTube = async () => {
+    const proj = projects.find((p) => p.id === selectedProjectId);
+    const channelId = proj?.channel_profile_id || (channels.length > 0 ? channels[0].id : null);
+    if (!channelId) return;
+    if (!confirm('Are you sure you want to disconnect this YouTube channel and purge the encrypted tokens?')) return;
+    try {
+      const res = await fetch(`/api/youtube/disconnect/${channelId}`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setFeedbackMsg(
+          data.revoked_at_google
+            ? 'YouTube channel disconnected. Access was revoked at Google and local tokens purged.'
+            : 'YouTube channel disconnected and local tokens purged (Google revocation could not be confirmed — you can remove access at myaccount.google.com/permissions).',
+        );
+        fetchYouTubeStatus(channelId);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`Disconnect failed: ${err.message || res.status}`);
+      }
+    } catch (e: any) {
+      alert(`Disconnect error: ${e.message}`);
+    }
+  };
+
+  const handleApproveUpload = async () => {
+    if (!selectedProjectId) return;
+    try {
+      const res = await fetch(`/api/projects/${selectedProjectId}/upload-approval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision: 'approved',
+          notes: uploadApprovalNotes,
+        }),
+      });
+      if (res.ok) {
+        setFeedbackMsg('✓ Human upload approval recorded: Video is approved for private upload.');
+        fetchProjects();
+        fetchProjectDetails(selectedProjectId);
+      } else {
+        const err = await res.json();
+        alert(`Approval rejected: ${err.message}`);
+      }
+    } catch (e: any) {
+      alert(`Approval error: ${e.message}`);
+    }
+  };
+
+  const handleExecuteUpload = async () => {
+    if (!selectedProjectId) return;
+    setConfirmUploadModal(false);
+    setUploading(true);
+    setFeedbackMsg('Initiating private YouTube upload session...');
+    try {
+      const tagsArray = uploadMetadata.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const res = await fetch(`/api/projects/${selectedProjectId}/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: uploadMetadata.title || undefined,
+          description: uploadMetadata.description || undefined,
+          tags: tagsArray.length > 0 ? tagsArray : undefined,
+          made_for_kids: uploadMetadata.made_for_kids ? uploadMetadata.made_for_kids === 'yes' : undefined,
+          contains_synthetic_media: uploadMetadata.contains_synthetic_media
+            ? uploadMetadata.contains_synthetic_media === 'yes'
+            : undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setUploadRecord(data);
+        fetchProjects();
+        fetchProjectDetails(selectedProjectId);
+        if (data.upload_status === 'uploaded_private' && isMockUpload(data)) {
+          setFeedbackMsg(
+            `Mock upload staged (ENABLE_YOUTUBE_UPLOADS=false): nothing was sent to YouTube. Placeholder ID: ${data.youtube_video_id}`,
+          );
+        } else if (data.upload_status === 'uploaded_private') {
+          setFeedbackMsg(`✓ Upload succeeded! Video ID: ${data.youtube_video_id} (Visibility: PRIVATE)`);
+        }
+      } else {
+        alert(`Upload failed: ${data.message || 'Unknown error'}`);
+        fetchUploadStatus(selectedProjectId);
+      }
+    } catch (e: any) {
+      alert(`Upload error: ${e.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   return (
@@ -710,7 +963,9 @@ export function App() {
           <div className="safety-pill">
             <span>🛡️</span>
             <div>
-              <div style={{ fontWeight: 600 }}>Zero-Cost Mock Mode</div>
+              <div style={{ fontWeight: 600 }}>
+                {settings?.features.youtubeUploadsEnabled ? 'Live Private Uploads ON' : 'Zero-Cost Mock Mode'}
+              </div>
               <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Public YouTube Release Disabled</div>
             </div>
           </div>
@@ -1606,20 +1861,586 @@ export function App() {
             </div>
           )}
 
-          {/* TAB: UPLOAD REVIEW & JOBS PLACEHOLDERS */}
-          {['upload', 'jobs'].includes(activeTab) && (
+          {/* TAB: UPLOAD REVIEW (PHASE 4) */}
+          {activeTab === 'upload' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Top Context & Project Switcher */}
+              <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', padding: '16px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ fontSize: '24px' }}>🎬</div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Active Video Project
+                    </div>
+                    <select
+                      className="form-control"
+                      style={{ fontSize: '14px', fontWeight: 600, minWidth: '260px', marginTop: '4px' }}
+                      value={selectedProjectId || ''}
+                      onChange={(e) => setSelectedProjectId(e.target.value || null)}
+                    >
+                      <option value="">{projects.length === 0 ? '— No video projects yet —' : '— Select a video project —'}</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.title} ({p.format === 'short' ? 'Short' : 'Long-form'}) — [{p.status}]
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div className="locked-privacy-badge">
+                    <span>🔒</span> Visibility: PRIVATE (Fixed)
+                  </div>
+                  <span className={`status-badge ${ytStatus?.connected ? 'online' : 'offline'}`}>
+                    <span className="status-dot"></span>
+                    {ytStatus?.connected ? `Channel: ${ytStatus.channel_title || 'Connected'}` : 'YouTube: Disconnected'}
+                  </span>
+                </div>
+              </div>
+
+              {!selectedProjectId && (
+                <div className="card" style={{ borderLeft: '4px solid var(--accent-amber)' }}>
+                  <div className="card-title" style={{ marginBottom: '8px' }}>
+                    {projects.length === 0 ? 'Nothing to upload yet' : 'Pick a video project above'}
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginBottom: '12px' }}>
+                    Upload Review is the last step. A video has to be produced first:
+                  </p>
+                  <ol style={{ color: 'var(--text-secondary)', fontSize: '13.5px', paddingLeft: '20px', lineHeight: 1.8, marginBottom: '16px' }}>
+                    <li><strong>Video Projects</strong> — create a project for your channel</li>
+                    <li>Generate the script and <strong>approve</strong> it</li>
+                    <li>Add narration and assets, then render in <strong>Render &amp; Review</strong> and approve the render</li>
+                    <li>Come back here: approve the upload, set audience/disclosure, and upload as private</li>
+                  </ol>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button className="btn-primary" onClick={() => setActiveTab('projects')}>
+                      {projects.length === 0 ? '+ Create a Video Project' : 'Open Video Projects'}
+                    </button>
+                    {projects.length > 0 && (
+                      <button className="btn-secondary" onClick={() => setActiveTab('render')}>Go to Render &amp; Review</button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 2-Column Staging Layout */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.2fr', gap: '24px' }}>
+                {/* Left Column: OAuth Channel Status & Pre-flight Gating */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Google OAuth & YouTube Channel Card */}
+                  <div className="card" style={{ borderTop: '3px solid #ef4444' }}>
+                    <div className="card-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '18px', color: '#ef4444' }}>▶</span>
+                        <span className="card-title">YouTube Channel Authorization</span>
+                      </div>
+                      <span className={`badge ${ytStatus?.connected ? 'badge-success' : 'badge-danger'}`}>
+                        {ytStatus?.connected ? 'AUTHORIZED' : 'NOT CONNECTED'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div className="metric-row">
+                        <span className="metric-label">Google OAuth 2.0</span>
+                        <span className="metric-value">{settings?.providers.youtube.oauthConfigured ? 'Configured' : 'Missing Env'}</span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Token Encryption</span>
+                        <span className="metric-value">
+                          {settings?.providers.youtube.tokenEncryptionConfigured ? 'AES-256-GCM Active' : 'Unconfigured'}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Connected Channel</span>
+                        <span className="metric-value font-mono">
+                          {ytStatus?.connected ? (ytStatus.channel_title || ytStatus.youtube_channel_id || 'Unknown') : 'None'}
+                        </span>
+                      </div>
+                      {ytStatus?.connected && ytStatus.youtube_channel_id && (
+                        <div className="metric-row">
+                          <span className="metric-label">Channel ID</span>
+                          <a
+                            className="metric-value font-mono"
+                            style={{ fontSize: '11.5px' }}
+                            href={`https://www.youtube.com/channel/${encodeURIComponent(ytStatus.youtube_channel_id)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {ytStatus.youtube_channel_id}
+                          </a>
+                        </div>
+                      )}
+                      {ytStatus?.connected && (
+                        <div className="metric-row">
+                          <span className="metric-label">Offline Access (Refresh Token)</span>
+                          <span className="metric-value">{ytStatus.has_refresh_token ? 'Yes — auto-refreshes' : 'Missing'}</span>
+                        </div>
+                      )}
+                      {ytStatus?.connected && ytStatus.expiry_date && (
+                        <div className="metric-row">
+                          <span className="metric-label">Access Token Expires</span>
+                          <span className="metric-value" style={{ fontSize: '11.5px' }}>
+                            {new Date(ytStatus.expiry_date).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {ytStatus?.connected && (!ytStatus.has_refresh_token || !ytStatus.upload_scope_granted || ytStatus.token_status === 'expired') && (
+                      <div className="alert-warning" style={{ marginTop: '12px', fontSize: '12px' }}>
+                        ⚠️{' '}
+                        {!ytStatus.upload_scope_granted
+                          ? 'The youtube.upload permission was not granted. Disconnect and connect again, allowing all permissions.'
+                          : 'No refresh token stored, so this connection stops working when the access token expires. Remove the app at myaccount.google.com/permissions, then disconnect and connect again.'}
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+                      {!ytStatus?.connected ? (
+                        <button
+                          onClick={handleConnectYouTube}
+                          className="btn-primary"
+                          style={{ width: '100%', background: '#ef4444', borderColor: '#dc2626' }}
+                        >
+                          ▶ Connect with Google (OAuth 2.0)
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleDisconnectYouTube}
+                          className="btn-secondary"
+                          style={{ width: '100%', color: 'var(--accent-red)' }}
+                        >
+                          🔌 Disconnect & Purge Tokens
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '12px', lineHeight: 1.5 }}>
+                      🛡️ Tokens are encrypted at rest with AES-256-GCM authenticated encryption. Scopes: <code>youtube.upload</code>, <code>youtube.readonly</code>. Public publishing is disabled by system policy.
+                    </div>
+                  </div>
+
+                  {/* Pre-flight Media & Integrity Checklist */}
+                  <div className="card">
+                    <div className="card-header">
+                      <span className="card-title">Pre-flight Verification Checklist</span>
+                      <span className="badge badge-success">Mandatory Gates</span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className={`checklist-item ${activeScript?.status === 'approved' ? 'pass' : 'fail'}`}>
+                        <div>
+                          <strong>1. Script Approval Gate</strong>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {activeScript?.status === 'approved'
+                              ? `Script v${activeScript.version} approved for production`
+                              : 'Script must be approved in Production Studio'}
+                          </div>
+                        </div>
+                        <span className={`badge ${activeScript?.status === 'approved' ? 'badge-success' : 'badge-danger'}`}>
+                          {activeScript?.status === 'approved' ? 'PASS' : 'FAIL'}
+                        </span>
+                      </div>
+
+                      <div className={`checklist-item ${latestRender?.status === 'completed' && latestRender?.output_path ? 'pass' : 'fail'}`}>
+                        <div>
+                          <strong>2. Video Render Output</strong>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {latestRender?.status === 'completed'
+                              ? `MP4 verified on disk (${latestRender.validation_json?.durationSeconds}s)`
+                              : 'Requires completed local FFmpeg render'}
+                          </div>
+                        </div>
+                        <span className={`badge ${latestRender?.status === 'completed' ? 'badge-success' : 'badge-danger'}`}>
+                          {latestRender?.status === 'completed' ? 'PASS' : 'FAIL'}
+                        </span>
+                      </div>
+
+                      <div className={`checklist-item ${latestRender?.validation_json?.valid ? 'pass' : 'fail'}`}>
+                        <div>
+                          <strong>3. FFprobe Technical Validation</strong>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {latestRender?.validation_json?.valid
+                              ? `${latestRender.validation_json.width}x${latestRender.validation_json.height} @ ${latestRender.validation_json.fps}fps, Audio Synced`
+                              : 'Probe streams and duration check required'}
+                          </div>
+                        </div>
+                        <span className={`badge ${latestRender?.validation_json?.valid ? 'badge-success' : 'badge-danger'}`}>
+                          {latestRender?.validation_json?.valid ? 'PASS' : 'FAIL'}
+                        </span>
+                      </div>
+
+                      <div className={`checklist-item ${UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || '') ? 'pass' : 'fail'}`}>
+                        <div>
+                          <strong>4. Human Upload Gate Approval</strong>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || '')
+                              ? 'Explicit human upload approval recorded'
+                              : 'Requires explicit human sign-off below'}
+                          </div>
+                        </div>
+                        <span className={`badge ${UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || '') ? 'badge-success' : 'badge-danger'}`}>
+                          {UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || '') ? 'APPROVED' : 'PENDING'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Separate Human Upload Approval Gate */}
+                  <div className="card" style={{ borderLeft: '4px solid var(--accent-amber)' }}>
+                    <div className="card-header">
+                      <div>
+                        <span className="card-title">Explicit Human Upload Gate</span>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          Separate approval required specifically for YouTube staging
+                        </div>
+                      </div>
+                      <span className={`status-chip ${UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || '') ? 'approved' : 'review'}`}>
+                        {UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || '') ? 'APPROVED' : 'REVIEW REQUIRED'}
+                      </span>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Reviewer Verification Sign-off Notes</label>
+                      <textarea
+                        className="form-control font-mono"
+                        rows={2}
+                        value={uploadApprovalNotes}
+                        onChange={(e) => setUploadApprovalNotes(e.target.value)}
+                        placeholder="Confirm audio/video synchronization, compliance with YouTube Community Guidelines, and private staging status."
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleApproveUpload}
+                      disabled={loading || !latestRender || latestRender.status !== 'completed'}
+                      className="btn-primary"
+                      style={{ width: '100%', marginTop: '6px' }}
+                    >
+                      ✓ Approve for Private Upload (Human Gate)
+                    </button>
+
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                      ⚠️ If the script or video is re-rendered after approval, this upload authorization is invalidated automatically.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Metadata Review, Visibility Locked to Private & Upload Action */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Metadata Review Card */}
+                  <div className="card">
+                    <div className="card-header">
+                      <span className="card-title">Video Metadata Review</span>
+                      <span className="badge badge-success">Private Staging Package</span>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Video Title</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={uploadMetadata.title}
+                        onChange={(e) => setUploadMetadata({ ...uploadMetadata, title: e.target.value })}
+                        placeholder="Enter finalized video title"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Video Description</label>
+                      <textarea
+                        className="form-control font-mono"
+                        rows={4}
+                        value={uploadMetadata.description}
+                        onChange={(e) => setUploadMetadata({ ...uploadMetadata, description: e.target.value })}
+                        placeholder="Enter description and attribution text"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Tags (comma-separated)</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={uploadMetadata.tags}
+                        onChange={(e) => setUploadMetadata({ ...uploadMetadata, tags: e.target.value })}
+                        placeholder="youtube automation, software engineering, architecture"
+                      />
+                    </div>
+
+                    {/* Creator declarations required by YouTube — never inferred automatically */}
+                    <div className="form-group">
+                      <label>Audience — is this video made for kids? (required)</label>
+                      <select
+                        className="form-control"
+                        value={uploadMetadata.made_for_kids}
+                        onChange={(e) => setUploadMetadata({ ...uploadMetadata, made_for_kids: e.target.value as '' | 'yes' | 'no' })}
+                      >
+                        <option value="">— Choose —</option>
+                        <option value="no">No, it's not made for kids</option>
+                        <option value="yes">Yes, it's made for kids</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Altered or synthetic content? (required)</label>
+                      <select
+                        className="form-control"
+                        value={uploadMetadata.contains_synthetic_media}
+                        onChange={(e) =>
+                          setUploadMetadata({ ...uploadMetadata, contains_synthetic_media: e.target.value as '' | 'yes' | 'no' })
+                        }
+                      >
+                        <option value="">— Choose —</option>
+                        <option value="no">No realistic altered/synthetic content</option>
+                        <option value="yes">Yes — contains realistic AI-generated or altered content</option>
+                      </select>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Synthetic narration voices or clearly unrealistic graphics usually don't need disclosure; realistic depictions of people, places or events that didn't happen do. You decide.
+                      </div>
+                    </div>
+
+                    {/* Hardcoded Locked Visibility */}
+                    <div className="form-group" style={{ background: 'var(--bg-main)', padding: '14px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>YouTube Privacy Status:</span>
+                        <div className="locked-privacy-badge">
+                          <span>🔒</span> STRICTLY PRIVATE
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                        Public publishing and scheduling are disabled in the master studio policy. All videos uploaded from this environment are permanently flagged as <strong>Private</strong> in the YouTube Data API payload, accessible only to the authenticated channel owner in YouTube Studio.
+                      </div>
+                    </div>
+
+                    {/* Quota Notice */}
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Each upload consumes YouTube Data API quota.</span>
+                      <a href="https://developers.google.com/youtube/v3/determine_quota_cost" target="_blank" rel="noopener noreferrer">
+                        Current quota costs ↗
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Upload Action & Confirmation Card */}
+                  <div className="card">
+                    <div className="card-header">
+                      <span className="card-title">Initiate YouTube Private Upload</span>
+                      {uploading && <span className="badge badge-warning">UPLOADING...</span>}
+                    </div>
+
+                    {!(activeScript?.status === 'approved' && latestRender?.status === 'completed' && (UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || ''))) ? (
+                      <div className="alert-warning" style={{ margin: '0 0 16px 0', fontSize: '12.5px' }}>
+                        ⚠️ <strong>Upload Pre-flight Incomplete:</strong> Complete all 4 gates on the left (Script Approval, Rendered MP4, FFprobe check, and Human Upload Approval) before initiating upload.
+                      </div>
+                    ) : null}
+
+                    {settings?.features.youtubeUploadsEnabled && (!uploadMetadata.made_for_kids || !uploadMetadata.contains_synthetic_media) ? (
+                      <div className="alert-warning" style={{ margin: '0 0 16px 0', fontSize: '12.5px' }}>
+                        ⚠️ Choose the <strong>audience</strong> and <strong>altered/synthetic content</strong> declarations in Video Metadata Review before uploading.
+                      </div>
+                    ) : null}
+                    {settings?.features.youtubeUploadsEnabled && !ytStatus?.connected ? (
+                      <div className="alert-warning" style={{ margin: '0 0 16px 0', fontSize: '12.5px' }}>
+                        ⚠️ Connect the YouTube channel first.
+                      </div>
+                    ) : null}
+                    {!settings?.features.youtubeUploadsEnabled ? (
+                      <div style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        ENABLE_YOUTUBE_UPLOADS=false — the button runs a mock staging only; nothing is sent to YouTube.
+                      </div>
+                    ) : null}
+
+                    <button
+                      onClick={() => setConfirmUploadModal(true)}
+                      disabled={
+                        uploading ||
+                        (settings?.features.youtubeUploadsEnabled &&
+                          (!ytStatus?.connected || !uploadMetadata.made_for_kids || !uploadMetadata.contains_synthetic_media)) ||
+                        activeScript?.status !== 'approved' ||
+                        latestRender?.status !== 'completed' ||
+                        !UPLOAD_APPROVED_STATUSES.includes(selectedProject?.status || '')
+                      }
+                      className="btn-primary"
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        fontSize: '15px',
+                        fontWeight: 700,
+                        background: '#ef4444',
+                        borderColor: '#dc2626',
+                      }}
+                    >
+                      {uploading ? '⏳ Uploading Video to YouTube...' : '🚀 Upload Video to YouTube (Strictly Private)'}
+                    </button>
+
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>
+                      A final confirmation modal will prompt for verification before sending bytes.
+                    </div>
+                  </div>
+
+                  {/* Upload History & Status Tracking */}
+                  <div className="card">
+                    <div className="card-header">
+                      <span className="card-title">YouTube Upload Record & Tracking</span>
+                      {uploadRecord && (
+                        <span className={`status-chip ${uploadRecord.upload_status === 'uploaded_private' ? 'approved' : uploadRecord.upload_status === 'failed' ? 'badge-danger' : 'review'}`}>
+                          {isMockUpload(uploadRecord) ? 'MOCK STAGED' : uploadRecord.upload_status.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+
+                    {uploadRecord ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {uploadRecord.upload_status === 'uploaded_private' && (
+                          <div style={{ padding: '12px 16px', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <strong style={{ color: 'var(--accent-green)', fontSize: '14px' }}>
+                                ✓ {isMockUpload(uploadRecord) ? 'Mock Upload Staged (nothing sent to YouTube)' : 'Uploaded to YouTube'}
+                              </strong>
+                              <span className="locked-privacy-badge" style={{ fontSize: '10.5px', padding: '3px 8px' }}>
+                                🔒 PRIVATE
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '12px', marginTop: '6px', color: 'var(--text-primary)' }}>
+                              YouTube Video ID: <code>{uploadRecord.youtube_video_id}</code>
+                            </div>
+                            {isMockUpload(uploadRecord) && (
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                                ENABLE_YOUTUBE_UPLOADS is false, so this is a placeholder ID. Set it to true in .env and restart the API to upload for real.
+                              </div>
+                            )}
+                            {uploadRecord.youtube_video_id && !isMockUpload(uploadRecord) && (
+                              <div style={{ marginTop: '10px' }}>
+                                <a
+                                  href={`https://studio.youtube.com/video/${encodeURIComponent(uploadRecord.youtube_video_id)}/edit`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-secondary"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', textDecoration: 'none' }}
+                                >
+                                  ▶ View Private Video on YouTube Studio
+                                </a>
+                                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                  Note: Video is private and only viewable by authorized managers of the connected channel.
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {uploadRecord.upload_status === 'failed' && (
+                          <div className="alert-error" style={{ margin: 0 }}>
+                            <strong>Upload Error [{uploadRecord.error_code || 'FAILED'}]:</strong>
+                            <div style={{ marginTop: '4px', fontSize: '12px' }}>{uploadRecord.error_message}</div>
+                          </div>
+                        )}
+
+                        <div className="metric-row">
+                          <span className="metric-label">Upload Record ID</span>
+                          <span className="metric-value font-mono" style={{ fontSize: '11px' }}>{uploadRecord.id}</span>
+                        </div>
+                        <div className="metric-row">
+                          <span className="metric-label">Upload Attempts</span>
+                          <span className="metric-value">{uploadRecord.upload_attempts}</span>
+                        </div>
+                        {uploadRecord.last_attempt_at && (
+                          <div className="metric-row">
+                            <span className="metric-label">Last Attempt</span>
+                            <span className="metric-value font-mono" style={{ fontSize: '11px' }}>
+                              {new Date(uploadRecord.last_attempt_at).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                        {uploadRecord.uploaded_at && (
+                          <div className="metric-row">
+                            <span className="metric-label">Completed At</span>
+                            <span className="metric-value font-mono" style={{ fontSize: '11px' }}>
+                              {new Date(uploadRecord.uploaded_at).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="empty-state">
+                        <div>No upload attempts recorded for this project yet.</div>
+                        <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Follow the pre-flight checklist and initiate upload when ready.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: JOBS & LOGS (PHASE 5 PLACEHOLDER) */}
+          {activeTab === 'jobs' && (
             <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🚧</div>
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚙️</div>
               <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>
-                {activeTab === 'upload' && 'Phase 4: YouTube Data API Private Upload Staging'}
-                {activeTab === 'jobs' && 'Phase 5: Background Job Queue & Retention Monitor'}
+                Phase 5: Background Job Queue & Retention Monitor
               </h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', maxWidth: '520px', margin: '0 auto' }}>
-                This module will be implemented according to the master plan upon approval of Phase 3.
+                Scheduled cleanup, automated worker retry pools, and retention policies will be implemented in Phase 5.
               </p>
             </div>
           )}
         </div>
+
+        {/* Phase 4: Explicit Confirmation Modal Before Upload */}
+        {confirmUploadModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <span style={{ fontSize: '24px' }}>🛡️</span>
+                <div>
+                  <h3 style={{ fontSize: '17px', margin: 0, fontWeight: 700 }}>Confirm YouTube Private Upload</h3>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Mandatory Human Confirmation Step</div>
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-main)', padding: '14px', borderRadius: '6px', border: '1px solid var(--border-subtle)', marginBottom: '16px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Video Title: </span>
+                  <strong>{uploadMetadata.title || selectedProject?.title}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Target Channel: </span>
+                  <strong>{ytStatus?.channel_title || 'Authorized YouTube Channel'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Enforced Visibility: </span>
+                  <span style={{ color: 'var(--accent-red)', fontWeight: 700 }}>PRIVATE (Never Public)</span>
+                </div>
+              </div>
+
+              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '20px' }}>
+                Are you sure you want to proceed with staging this video on YouTube? The video will be uploaded with visibility strictly locked to <strong>PRIVATE</strong>. It will not be scheduled or released to subscribers.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setConfirmUploadModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ background: '#ef4444', borderColor: '#dc2626' }}
+                  onClick={handleExecuteUpload}
+                >
+                  ✓ Confirm & Begin Private Upload
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

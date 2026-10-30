@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { AssetType, LicenseType } from '../../../database/entities/asset.entity';
 
@@ -32,6 +33,14 @@ export class CreateAssetDto {
   attribution_text?: string;
 
   @ApiProperty({ example: true, description: 'Explicit declaration that commercial monetization is permitted' })
+  // Multipart forms send booleans as text. Read the raw value (obj[key]) because
+  // implicit conversion would turn the string "false" into true.
+  @Transform(({ obj, key }) => {
+    const raw = obj[key];
+    if (raw === true || raw === 'true' || raw === '1' || raw === 'on') return true;
+    if (raw === false || raw === 'false' || raw === '0' || raw === '' || raw === undefined) return false;
+    return raw;
+  })
   @IsBoolean()
   commercial_use_allowed!: boolean;
 }
