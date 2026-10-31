@@ -16,6 +16,7 @@ import { AssetsModule } from './modules/assets/assets.module';
 import { NarrationModule } from './modules/narration/narration.module';
 import { RenderingModule } from './modules/rendering/rendering.module';
 import { YouTubeModule } from './modules/youtube/youtube.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { YouTubeModule } from './modules/youtube/youtube.module';
     NarrationModule,
     RenderingModule,
     YouTubeModule,
+    JobsModule,
   ],
 })
 export class AppModule {}

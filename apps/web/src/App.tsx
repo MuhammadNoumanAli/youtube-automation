@@ -231,6 +231,43 @@ interface YouTubeConnectionStatus {
   upload_scope_granted: boolean;
 }
 
+// Mirrors BackgroundJob in apps/api/src/database/entities/background-job.entity.ts
+interface BackgroundJob {
+  id: string;
+  job_type: 'render' | 'upload' | 'maintenance';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  idempotency_key: string | null;
+  video_project_id: string | null;
+  payload_json: Record<string, unknown>;
+  attempt_count: number;
+  max_attempts: number;
+  locked_by: string | null;
+  locked_at: string | null;
+  lock_expires_at: string | null;
+  next_retry_at: string | null;
+  last_error: string | null;
+  result_json: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Mirrors AuditEvent in apps/api/src/database/entities/audit-event.entity.ts
+interface AuditEvent {
+  id: string;
+  actor: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  details_json: Record<string, unknown> | null;
+  created_at: string;
+}
+
+interface StorageStats {
+  storageRoot: string;
+  totalSizeBytes: number;
+  fileCount: number;
+}
+
 const MOCK_VIDEO_ID_PREFIX = 'mock_private_';
 const isMockUpload = (rec: UploadRecord | null) => Boolean(rec?.youtube_video_id?.startsWith(MOCK_VIDEO_ID_PREFIX));
 const UPLOAD_APPROVED_STATUSES = ['ready_to_upload', 'uploading', 'uploaded_private'];
@@ -279,6 +316,13 @@ export function App() {
     contains_synthetic_media: '' as '' | 'yes' | 'no',
   });
   const [confirmUploadModal, setConfirmUploadModal] = useState(false);
+
+  // Phase 5 state (Jobs, Worker Queue, Audit Trail & Maintenance)
+  const [jobs, setJobs] = useState<BackgroundJob[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
+  const [cleaningStorage, setCleaningStorage] = useState(false);
+  const [activeJobFilter, setActiveJobFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'failed'>('all');
 
   // Forms state
   const [newChannel, setNewChannel] = useState({ name: '', niche: '', language: 'en' });
@@ -387,6 +431,73 @@ export function App() {
     }
   };
 
+  const fetchJobs = async () => {
+    try {
+      const res = await fetch('/api/jobs?limit=50');
+      if (res.ok) setJobs(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchAuditEvents = async () => {
+    try {
+      const res = await fetch('/api/jobs/audit?limit=50');
+      if (res.ok) setAuditEvents(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchStorageStats = async () => {
+    try {
+      const res = await fetch('/api/jobs/storage/stats');
+      if (res.ok) setStorageStats(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCancelJob = async (jobId: string) => {
+    if (!confirm('Are you sure you want to cancel this background task?')) return;
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Cancelled by operator via dashboard' }),
+      });
+      if (res.ok) {
+        setFeedbackMsg('Job cancelled successfully.');
+        fetchJobs();
+      } else {
+        const err = await res.json();
+        alert(`Failed to cancel job: ${err.message}`);
+      }
+    } catch (e: any) {
+      alert(`Error cancelling job: ${e.message}`);
+    }
+  };
+
+  const handleTriggerCleanup = async () => {
+    try {
+      setCleaningStorage(true);
+      const res = await fetch('/api/jobs/maintenance/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxAgeHours: 24 }),
+      });
+      if (res.ok) {
+        setFeedbackMsg('Storage cleanup task enqueued! Worker will purge stale scratch files.');
+        fetchJobs();
+        fetchStorageStats();
+      }
+    } catch (e: any) {
+      alert(`Error enqueuing cleanup: ${e.message}`);
+    } finally {
+      setCleaningStorage(false);
+    }
+  };
+
   const fetchProjectDetails = async (projectId: string) => {
     try {
       const [srcRes, scRes, assetRes, narrRes, rendRes, upRes] = await Promise.all([
@@ -432,6 +543,17 @@ export function App() {
     fetchChannels();
     fetchTopics();
     fetchProjects();
+    fetchJobs();
+    fetchAuditEvents();
+    fetchStorageStats();
+
+    // Auto-poll jobs and audit events every 5 seconds
+    const interval = setInterval(() => {
+      fetchJobs();
+      fetchAuditEvents();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -2376,16 +2498,253 @@ export function App() {
             </div>
           )}
 
-          {/* TAB: JOBS & LOGS (PHASE 5 PLACEHOLDER) */}
+          {/* TAB: JOBS & LOGS (PHASE 5) */}
           {activeTab === 'jobs' && (
-            <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚙️</div>
-              <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>
-                Phase 5: Background Job Queue & Retention Monitor
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', maxWidth: '520px', margin: '0 auto' }}>
-                Scheduled cleanup, automated worker retry pools, and retention policies will be implemented in Phase 5.
-              </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Header metrics card */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                <div className="card" style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Queue</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px', color: 'var(--text-primary)' }}>
+                    {jobs.filter((j) => j.status === 'processing').length}{' '}
+                    <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-amber)' }}>Running</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    {jobs.filter((j) => j.status === 'pending').length} pending in backlog
+                  </div>
+                </div>
+
+                <div className="card" style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Completed Tasks</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px', color: 'var(--accent-green)' }}>
+                    {jobs.filter((j) => j.status === 'completed').length}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    {jobs.filter((j) => j.status === 'failed').length} failed permanently
+                  </div>
+                </div>
+
+                <div className="card" style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Local Storage Usage</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px', color: 'var(--accent-blue)' }}>
+                    {storageStats ? `${(storageStats.totalSizeBytes / 1024 / 1024).toFixed(1)} MB` : 'Calculating...'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    {storageStats ? `${storageStats.fileCount} managed files` : 'Scanning storage root'}
+                  </div>
+                </div>
+
+                <div className="card" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <button
+                    onClick={handleTriggerCleanup}
+                    disabled={cleaningStorage}
+                    className="btn-secondary"
+                    style={{ width: '100%', fontSize: '12.5px', padding: '10px' }}
+                  >
+                    {cleaningStorage ? '🧹 Cleaning Scratch Files...' : '🧹 Purge Stale Scratch Files (>24h)'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 2-Column: Background Job Queue & Audit Trail */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px' }}>
+                {/* Left Column: Background Job Queue */}
+                <div className="card">
+                  <div className="card-header">
+                    <div>
+                      <span className="card-title">Background Job Queue</span>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Lease locking, atomic execution & exponential backoff retries
+                      </div>
+                    </div>
+                    {/* Status filter tabs */}
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {(['all', 'pending', 'processing', 'completed', 'failed'] as const).map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setActiveJobFilter(filter)}
+                          style={{
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-subtle)',
+                            background: activeJobFilter === filter ? 'var(--bg-surface-elevated)' : 'transparent',
+                            color: activeJobFilter === filter ? 'var(--text-primary)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {filter.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {jobs.filter((j) => activeJobFilter === 'all' || j.status === activeJobFilter).length === 0 ? (
+                    <div className="empty-state">No jobs found matching filter '{activeJobFilter}'.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {jobs
+                        .filter((j) => activeJobFilter === 'all' || j.status === activeJobFilter)
+                        .map((job) => (
+                          <div
+                            key={job.id}
+                            style={{
+                              padding: '12px 14px',
+                              background: 'var(--bg-main)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '8px',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '16px' }}>
+                                  {job.job_type === 'render' && '🎬'}
+                                  {job.job_type === 'upload' && '🚀'}
+                                  {job.job_type === 'maintenance' && '🧹'}
+                                </span>
+                                <strong style={{ fontSize: '13px' }}>{job.job_type.toUpperCase()} TASK</strong>
+                                <span className="font-mono" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                  #{job.id.slice(0, 8)}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span
+                                  className={`badge ${
+                                    job.status === 'completed'
+                                      ? 'badge-success'
+                                      : job.status === 'failed'
+                                      ? 'badge-danger'
+                                      : job.status === 'processing'
+                                      ? 'badge-warning'
+                                      : ''
+                                  }`}
+                                >
+                                  {job.status.toUpperCase()}
+                                </span>
+                                {(job.status === 'pending' || job.status === 'processing') && (
+                                  <button
+                                    onClick={() => handleCancelJob(job.id)}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: 'var(--accent-red)',
+                                      cursor: 'pointer',
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                              Attempts: {job.attempt_count} / {job.max_attempts}
+                              {job.locked_by && ` • Locked by: ${job.locked_by}`}
+                              {job.next_retry_at && job.status === 'pending' && (
+                                <span style={{ color: 'var(--accent-amber)' }}>
+                                  {' '}
+                                  • Retry scheduled: {new Date(job.next_retry_at).toLocaleTimeString()}
+                                </span>
+                              )}
+                            </div>
+
+                            {job.last_error && (
+                              <div
+                                style={{
+                                  padding: '6px 10px',
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  color: '#fca5a5',
+                                  wordBreak: 'break-word',
+                                }}
+                              >
+                                Error: {job.last_error}
+                              </div>
+                            )}
+
+                            {job.result_json && (
+                              <div
+                                className="font-mono"
+                                style={{
+                                  fontSize: '10.5px',
+                                  color: 'var(--accent-green)',
+                                  background: 'rgba(34, 197, 94, 0.08)',
+                                  padding: '6px 8px',
+                                  borderRadius: '4px',
+                                  overflowX: 'auto',
+                                }}
+                              >
+                                Result: {JSON.stringify(job.result_json)}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Immutable Audit Trail */}
+                <div className="card">
+                  <div className="card-header">
+                    <div>
+                      <span className="card-title">Immutable Audit Trail</span>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Operational security & execution log
+                      </div>
+                    </div>
+                    <span className="badge badge-success">{auditEvents.length} Events</span>
+                  </div>
+
+                  {auditEvents.length === 0 ? (
+                    <div className="empty-state">No audit events logged yet.</div>
+                  ) : (
+                    <div style={{ maxHeight: '560px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {auditEvents.map((ev) => (
+                        <div
+                          key={ev.id}
+                          style={{
+                            padding: '10px 12px',
+                            background: 'var(--bg-main)',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '6px',
+                            fontSize: '11.5px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ color: 'var(--accent-blue)' }}>{ev.action}</strong>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                              {new Date(ev.created_at).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <div style={{ color: 'var(--text-muted)', fontSize: '10.5px', marginTop: '3px' }}>
+                            Actor: <code>{ev.actor}</code> • Target: <code>{ev.entity_type}</code>
+                          </div>
+                          {ev.details_json && Object.keys(ev.details_json).length > 0 && (
+                            <div
+                              className="font-mono"
+                              style={{
+                                marginTop: '4px',
+                                fontSize: '10px',
+                                color: 'var(--text-secondary)',
+                                wordBreak: 'break-all',
+                              }}
+                            >
+                              {JSON.stringify(ev.details_json)}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

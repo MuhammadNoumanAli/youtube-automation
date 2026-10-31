@@ -52,6 +52,7 @@ async function bootstrap() {
     .addTag('Narration', 'Deterministic TTS synthesis and voiceover audio import')
     .addTag('Rendering', 'Local FFmpeg video rendering pipeline, FFprobe validation, and review gate')
     .addTag('YouTube', 'Google OAuth 2.0 authorization, AES-256 token storage, and private video uploads')
+    .addTag('Jobs', 'Background job queue runner, lease locking, idempotency, and audit logging')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
