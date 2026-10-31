@@ -231,6 +231,20 @@ interface YouTubeConnectionStatus {
   upload_scope_granted: boolean;
 }
 
+interface YouTubeAnalytics {
+  channel_id: string;
+  title: string;
+  description: string;
+  custom_url?: string;
+  published_at: string;
+  view_count: number;
+  subscriber_count: number;
+  video_count: number;
+  hidden_subscriber_count: boolean;
+  thumbnail_url?: string;
+}
+
+
 // Mirrors BackgroundJob in apps/api/src/database/entities/background-job.entity.ts
 interface BackgroundJob {
   id: string;
@@ -304,6 +318,8 @@ export function App() {
 
   // Phase 4 state
   const [ytStatus, setYtStatus] = useState<YouTubeConnectionStatus | null>(null);
+  const [ytAnalytics, setYtAnalytics] = useState<YouTubeAnalytics | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [uploadRecord, setUploadRecord] = useState<UploadRecord | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadApprovalNotes, setUploadApprovalNotes] = useState('Reviewed final render, verified media integrity and approved strictly private upload.');
@@ -406,10 +422,35 @@ export function App() {
     }
   };
 
+  const fetchYouTubeAnalytics = async (channelId: string) => {
+    try {
+      setLoadingAnalytics(true);
+      const res = await fetch(`/api/youtube/analytics/${channelId}`);
+      if (res.ok) {
+        setYtAnalytics(await res.json());
+      } else {
+        setYtAnalytics(null);
+      }
+    } catch (e) {
+      console.error(e);
+      setYtAnalytics(null);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
   const fetchYouTubeStatus = async (channelId: string) => {
     try {
       const res = await fetch(`/api/youtube/channel-status/${channelId}`);
-      if (res.ok) setYtStatus(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setYtStatus(data);
+        if (data?.connected) {
+          fetchYouTubeAnalytics(channelId);
+        } else {
+          setYtAnalytics(null);
+        }
+      }
     } catch (e) {
       console.error(e);
     }
@@ -939,6 +980,7 @@ export function App() {
             ? 'YouTube channel disconnected. Access was revoked at Google and local tokens purged.'
             : 'YouTube channel disconnected and local tokens purged (Google revocation could not be confirmed — you can remove access at myaccount.google.com/permissions).',
         );
+        setYtAnalytics(null);
         fetchYouTubeStatus(channelId);
       } else {
         const err = await res.json().catch(() => ({}));
@@ -1216,6 +1258,76 @@ export function App() {
                   <span className="metric-value">{settings?.features.publicReleaseEnabled ? 'ENABLED' : 'DISABLED (Private Only)'}</span>
                 </div>
               </div>
+
+              {/* Phase 6: Live YouTube Channel Analytics */}
+              <div className="card" style={{ borderTop: '3px solid #ef4444' }}>
+                <div className="card-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px', color: '#ef4444' }}>📊</span>
+                    <span className="card-title">YouTube Channel Analytics</span>
+                  </div>
+                  <span className={`badge ${ytAnalytics ? 'badge-success' : ytStatus?.connected ? 'badge-warning' : 'badge-neutral'}`}>
+                    {ytAnalytics ? 'LIVE DATA' : ytStatus?.connected ? 'SYNCING...' : 'DISCONNECTED'}
+                  </span>
+                </div>
+                {ytAnalytics ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
+                      {ytAnalytics.thumbnail_url && (
+                        <img
+                          src={ytAnalytics.thumbnail_url}
+                          alt={ytAnalytics.title}
+                          style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-subtle)' }}
+                        />
+                      )}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: '14.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {ytAnalytics.title}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          {ytAnalytics.custom_url ? ytAnalytics.custom_url : ytAnalytics.channel_id}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', textAlign: 'center' }}>
+                      <div style={{ background: 'var(--bg-main)', padding: '10px 6px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Subscribers</div>
+                        <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px', color: 'var(--accent-primary)' }}>
+                          {ytAnalytics.hidden_subscriber_count ? 'Hidden' : ytAnalytics.subscriber_count.toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ background: 'var(--bg-main)', padding: '10px 6px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Views</div>
+                        <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px', color: '#10b981' }}>
+                          {ytAnalytics.view_count.toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ background: 'var(--bg-main)', padding: '10px 6px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Videos</div>
+                        <div style={{ fontSize: '17px', fontWeight: 700, marginTop: '4px', color: '#f59e0b' }}>
+                          {ytAnalytics.video_count.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="metric-row" style={{ marginTop: '2px' }}>
+                      <span className="metric-label">Published Since</span>
+                      <span className="metric-value font-mono" style={{ fontSize: '12px' }}>
+                        {ytAnalytics.published_at ? new Date(ytAnalytics.published_at).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    {loadingAnalytics ? (
+                      'Fetching channel statistics from YouTube Data API...'
+                    ) : ytStatus?.connected ? (
+                      'Channel connected. Retrieving statistics...'
+                    ) : (
+                      'Connect your YouTube channel via Google OAuth in Upload Review to display live subscriber count, lifetime views, and public video metrics.'
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1284,6 +1396,14 @@ export function App() {
                         <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
                           Niche: {ch.niche}
                         </div>
+                        {ch.id === (ytStatus?.channel_profile_id || channels[0]?.id) && ytAnalytics && (
+                          <div style={{ marginTop: '10px', display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '12px', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                            <span>👥 <strong>{ytAnalytics.subscriber_count.toLocaleString()}</strong> Subscribers</span>
+                            <span>👁️ <strong>{ytAnalytics.view_count.toLocaleString()}</strong> Views</span>
+                            <span>📹 <strong>{ytAnalytics.video_count.toLocaleString()}</strong> Videos</span>
+                            <span style={{ color: 'var(--accent-primary)', marginLeft: 'auto' }}>{ytAnalytics.custom_url || ytAnalytics.channel_id}</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -2105,6 +2225,29 @@ export function App() {
                           <span className="metric-value" style={{ fontSize: '11.5px' }}>
                             {new Date(ytStatus.expiry_date).toLocaleString()}
                           </span>
+                        </div>
+                      )}
+
+                      {ytAnalytics && (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', textAlign: 'center' }}>
+                          <div style={{ background: 'var(--bg-main)', padding: '6px 4px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Subscribers</div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)' }}>
+                              {ytAnalytics.hidden_subscriber_count ? 'Hidden' : ytAnalytics.subscriber_count.toLocaleString()}
+                            </div>
+                          </div>
+                          <div style={{ background: 'var(--bg-main)', padding: '6px 4px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Views</div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>
+                              {ytAnalytics.view_count.toLocaleString()}
+                            </div>
+                          </div>
+                          <div style={{ background: 'var(--bg-main)', padding: '6px 4px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Videos</div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#f59e0b' }}>
+                              {ytAnalytics.video_count.toLocaleString()}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

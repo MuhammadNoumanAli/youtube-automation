@@ -292,6 +292,65 @@ describe('YouTube OAuth & Upload Services', () => {
     });
   });
 
+  describe('getChannelAnalytics', () => {
+    it('should return mapped statistics and channel metadata', async () => {
+      const tokens = encryptionService.encrypt(
+        JSON.stringify({ access_token: 'valid_access_token', refresh_token: 'r', expiry_date: Date.now() + 1e6 }),
+      );
+      mockChannelRepo.findOne.mockResolvedValue({
+        id: 'chan-1',
+        name: 'Tech Insights',
+        encrypted_oauth_tokens: tokens,
+        youtube_channel_id: 'UC123',
+      });
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [
+            {
+              id: 'UC123',
+              snippet: {
+                title: 'Tech Insights Official',
+                description: 'Deep dive tech tutorials',
+                customUrl: '@techinsights',
+                publishedAt: '2023-01-15T00:00:00Z',
+                thumbnails: { default: { url: 'https://example.com/thumb.jpg' } },
+              },
+              statistics: {
+                viewCount: '15420',
+                subscriberCount: '1240',
+                videoCount: '48',
+                hiddenSubscriberCount: false,
+              },
+            },
+          ],
+        }),
+      });
+
+      const analytics = await oauthService.getChannelAnalytics('chan-1');
+
+      expect(analytics.channel_id).toBe('UC123');
+      expect(analytics.title).toBe('Tech Insights Official');
+      expect(analytics.custom_url).toBe('@techinsights');
+      expect(analytics.subscriber_count).toBe(1240);
+      expect(analytics.view_count).toBe(15420);
+      expect(analytics.video_count).toBe(48);
+      expect(analytics.thumbnail_url).toBe('https://example.com/thumb.jpg');
+    });
+
+    it('should throw BadRequestException if channel has no tokens', async () => {
+      mockChannelRepo.findOne.mockResolvedValue({
+        id: 'chan-1',
+        name: 'Tech Insights',
+        encrypted_oauth_tokens: null,
+      });
+
+      await expect(oauthService.getChannelAnalytics('chan-1')).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('Upload Safety Gates & Mandatory Constraints', () => {
     const dummyRenderPath = path.resolve('./storage_test/test_render.mp4');
 

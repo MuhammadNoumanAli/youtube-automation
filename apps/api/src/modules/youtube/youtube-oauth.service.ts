@@ -477,4 +477,74 @@ export class YouTubeOAuthService {
     this.logger.log(`Disconnected YouTube account for channel "${channel.name}".`);
     return { disconnected: true, revoked_at_google: revoked };
   }
+
+  /**
+   * Phase 6: Fetch read-only channel performance statistics from YouTube Data API v3
+   */
+  async getChannelAnalytics(channelProfileId: string): Promise<{
+    channel_id: string;
+    title: string;
+    description: string;
+    custom_url?: string;
+    published_at: string;
+    view_count: number;
+    subscriber_count: number;
+    video_count: number;
+    hidden_subscriber_count: boolean;
+    thumbnail_url?: string;
+  }> {
+    const channel = await this.findChannelWithTokens(channelProfileId);
+    if (!channel) {
+      throw new NotFoundException(`Channel profile "${channelProfileId}" not found.`);
+    }
+
+    const tokens = this.readDecryptedTokens(channel);
+    if (!tokens || !tokens.access_token) {
+      throw new BadRequestException('YouTube channel is not connected or tokens are missing.');
+    }
+
+    const accessToken = await this.getValidAccessToken(channelProfileId);
+
+    let res: Response;
+    try {
+      res = await fetch(
+        'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
+    } catch (e: any) {
+      this.logger.error(`YouTube channels.list statistics network error: ${e.message}`);
+      throw new InternalServerErrorException(`Could not reach YouTube Data API: ${e.message}`);
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const reason = errData?.error?.errors?.[0]?.reason || errData?.error?.message || `HTTP ${res.status}`;
+      this.logger.error(`YouTube analytics fetch failed: ${reason}`);
+      throw new BadRequestException(`Failed to retrieve YouTube analytics: ${reason}`);
+    }
+
+    const data = await res.json();
+    const item = data.items?.[0];
+    if (!item) {
+      throw new NotFoundException('No YouTube channel found associated with this account.');
+    }
+
+    const stats = item.statistics || {};
+    const snippet = item.snippet || {};
+
+    return {
+      channel_id: item.id,
+      title: snippet.title || channel.name,
+      description: snippet.description || '',
+      custom_url: snippet.customUrl,
+      published_at: snippet.publishedAt,
+      view_count: Number(stats.viewCount || 0),
+      subscriber_count: Number(stats.subscriberCount || 0),
+      video_count: Number(stats.videoCount || 0),
+      hidden_subscriber_count: Boolean(stats.hiddenSubscriberCount),
+      thumbnail_url: snippet.thumbnails?.default?.url || snippet.thumbnails?.medium?.url,
+    };
+  }
 }

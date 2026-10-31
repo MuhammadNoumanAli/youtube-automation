@@ -98,6 +98,13 @@ export class YouTubeController {
     return this.oauthService.getConnectionStatus(channelId);
   }
 
+  @Get('youtube/analytics/:channelId')
+  @ApiOperation({ summary: 'Phase 6: Fetch live YouTube channel metrics (views, subscribers, video counts)' })
+  @ApiResponse({ status: 200, description: 'Read-only channel performance statistics' })
+  async getChannelAnalytics(@Param('channelId') channelId: string) {
+    return this.oauthService.getChannelAnalytics(channelId);
+  }
+
   @Post('youtube/disconnect/:channelId')
   @ApiOperation({ summary: 'Disconnect YouTube account and purge encrypted tokens' })
   @ApiResponse({ status: 200, description: 'Confirmation of disconnection' })
