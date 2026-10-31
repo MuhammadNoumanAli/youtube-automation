@@ -17,6 +17,7 @@ import { NarrationModule } from './modules/narration/narration.module';
 import { RenderingModule } from './modules/rendering/rendering.module';
 import { YouTubeModule } from './modules/youtube/youtube.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { MagicVideoModule } from './modules/magic-video/magic-video.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
     RenderingModule,
     YouTubeModule,
     JobsModule,
+    MagicVideoModule,
   ],
 })
 export class AppModule {}

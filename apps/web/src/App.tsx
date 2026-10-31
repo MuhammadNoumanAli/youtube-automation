@@ -287,7 +287,7 @@ const isMockUpload = (rec: UploadRecord | null) => Boolean(rec?.youtube_video_id
 const UPLOAD_APPROVED_STATUSES = ['ready_to_upload', 'uploading', 'uploaded_private'];
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'channels' | 'ideas' | 'projects' | 'render' | 'upload' | 'jobs'>(() => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'magic' | 'channels' | 'ideas' | 'projects' | 'render' | 'upload' | 'jobs'>(() => {
     try {
       return new URLSearchParams(window.location.search).get('tab') === 'upload' ? 'upload' : 'dashboard';
     } catch {
@@ -347,6 +347,19 @@ export function App() {
   const [newSource, setNewSource] = useState({ url: '', title: '', publisher: '', claim_supported: '', verification_status: 'verified' as 'verified' | 'unverified' | 'disputed' });
   const [approvalNotes, setApprovalNotes] = useState('Reviewed script, verified scene plan and technical accuracy.');
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+
+  // Magic 1-Prompt Video Generator State
+  const [magicForm, setMagicForm] = useState({
+    prompt: '3 Mind-Blowing Facts About Deep Ocean Creatures You Did Not Know',
+    format: 'short' as 'short' | 'long_form',
+    target_duration_seconds: 60,
+    visual_style: 'stock_broll' as 'stock_broll' | 'ai_avatar' | 'ai_generative' | 'motion_graphics',
+    channel_profile_id: '',
+    tone: 'Fast-paced, high retention, viral hook',
+  });
+  const [magicGenerating, setMagicGenerating] = useState(false);
+  const [magicStep, setMagicStep] = useState<string | null>(null);
+  const [magicResult, setMagicResult] = useState<any | null>(null);
 
   // Asset upload form state
   const [assetFile, setAssetFile] = useState<File | null>(null);
@@ -991,6 +1004,55 @@ export function App() {
     }
   };
 
+  const handleMagicGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!magicForm.prompt.trim()) return;
+
+    try {
+      setMagicGenerating(true);
+      setMagicResult(null);
+      setMagicStep('1/4 Drafting 60-second hook script & scene breakdown...');
+
+      const stepTimer1 = setTimeout(() => {
+        setMagicStep('2/4 Synthesizing natural voiceover audio with Windows SAPI...');
+      }, 4000);
+
+      const stepTimer2 = setTimeout(() => {
+        setMagicStep('3/4 Sourcing HD scene clips & preparing dynamic motion...');
+      }, 9000);
+
+      const stepTimer3 = setTimeout(() => {
+        setMagicStep('4/4 FFmpeg stitching video, burning kinetic captions & validating with FFprobe...');
+      }, 15000);
+
+      const res = await fetch('/api/magic/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(magicForm),
+      });
+
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+      clearTimeout(stepTimer3);
+
+      if (res.ok) {
+        const result = await res.json();
+        setMagicResult(result);
+        setFeedbackMsg(`✨ Video created successfully in ${result.duration_seconds}s! Ready in Render & Review.`);
+        await fetchProjects();
+        setSelectedProjectId(result.project_id);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`Generation failed: ${err.message || res.status}`);
+      }
+    } catch (err: any) {
+      alert(`Error during magic generation: ${err.message}`);
+    } finally {
+      setMagicGenerating(false);
+      setMagicStep(null);
+    }
+  };
+
   const handleApproveUpload = async () => {
     if (!selectedProjectId) return;
     try {
@@ -1083,6 +1145,14 @@ export function App() {
               <span>📊</span> Dashboard
             </button>
           </li>
+          <li className={`nav-item ${activeTab === 'magic' ? 'active' : ''}`} style={{ background: activeTab === 'magic' ? 'rgba(245, 158, 11, 0.15)' : 'transparent', borderLeft: activeTab === 'magic' ? '3px solid #f59e0b' : 'none' }}>
+            <button onClick={() => setActiveTab('magic')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#f59e0b' }}>✨</span> 1-Click Magic AI
+              </span>
+              <span className="badge badge-warning" style={{ fontSize: '9px', padding: '2px 5px', textTransform: 'uppercase' }}>AI</span>
+            </button>
+          </li>
           <li className={`nav-item ${activeTab === 'channels' ? 'active' : ''}`}>
             <button onClick={() => setActiveTab('channels')}>
               <span>📺</span> Channel Profiles
@@ -1143,6 +1213,7 @@ export function App() {
           <div>
             <h1 className="header-title">
               {activeTab === 'dashboard' && 'Studio Overview & Health'}
+              {activeTab === 'magic' && '✨ 1-Click Magic Video Studio (Shorts, Reels & Avatars)'}
               {activeTab === 'channels' && 'YouTube Channel Profiles'}
               {activeTab === 'ideas' && 'Content Strategy & Topic Backlog'}
               {activeTab === 'projects' && 'Production Studio: Script & Assets'}
@@ -1325,6 +1396,289 @@ export function App() {
                     ) : (
                       'Connect your YouTube channel via Google OAuth in Upload Review to display live subscriber count, lifetime views, and public video metrics.'
                     )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: MAGIC 1-CLICK STUDIO */}
+          {activeTab === 'magic' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+              {/* Left Column: 1-Click Form */}
+              <div className="card" style={{ borderTop: '3px solid #f59e0b' }}>
+                <div className="card-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px', color: '#f59e0b' }}>✨</span>
+                    <span className="card-title">One-Prompt Video Generator</span>
+                  </div>
+                  <span className="badge badge-warning">AI AUTOMATION</span>
+                </div>
+
+                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px', lineHeight: 1.5 }}>
+                  Provide a single topic prompt or video concept. The engine automatically creates the script outline, synthesizes natural speech narration, sources matching vertical scene visuals, and stitches everything via FFmpeg with viral kinetic captions.
+                </p>
+
+                <form onSubmit={handleMagicGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="form-group">
+                    <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Video Prompt / Topic</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{magicForm.prompt.length} chars</span>
+                    </label>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      style={{ fontSize: '14px', lineHeight: 1.5, resize: 'vertical' }}
+                      placeholder="e.g. 3 Mind-Blowing Facts About Deep Ocean Creatures You Did Not Know"
+                      value={magicForm.prompt}
+                      onChange={(e) => setMagicForm({ ...magicForm, prompt: e.target.value })}
+                      required
+                      disabled={magicGenerating}
+                    />
+                  </div>
+
+                  {/* Quick Inspiration Chips */}
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                      Quick Inspiration Prompts:
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {[
+                        '3 Mind-Blowing Facts About Deep Ocean Creatures You Did Not Know',
+                        'Top 5 AI Tools That Will Save You 10 Hours Every Single Week',
+                        'Why the James Webb Space Telescope Changes Everything We Know',
+                        'The 1-Minute Rule for Beating Procrastination & Rewiring Your Brain',
+                      ].map((chip) => (
+                        <button
+                          key={chip}
+                          type="button"
+                          className="btn-secondary"
+                          style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', textAlign: 'left' }}
+                          onClick={() => setMagicForm({ ...magicForm, prompt: chip })}
+                          disabled={magicGenerating}
+                        >
+                          ⚡ {chip.substring(0, 36)}...
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="form-group">
+                      <label>Format</label>
+                      <select
+                        className="form-control"
+                        value={magicForm.format}
+                        onChange={(e) => setMagicForm({ ...magicForm, format: e.target.value as any })}
+                        disabled={magicGenerating}
+                      >
+                        <option value="short">📱 YouTube Short / Reel (9:16 Vertical)</option>
+                        <option value="long_form">📺 Standard Video (16:9 Landscape)</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Target Duration</label>
+                      <select
+                        className="form-control"
+                        value={magicForm.target_duration_seconds}
+                        onChange={(e) => setMagicForm({ ...magicForm, target_duration_seconds: Number(e.target.value) })}
+                        disabled={magicGenerating}
+                      >
+                        <option value={30}>30 Seconds (Fast Hook)</option>
+                        <option value={60}>60 Seconds (Standard Short)</option>
+                        <option value={90}>90 Seconds (Deep Dive)</option>
+                        <option value={180}>3 Minutes (Mini Document)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Visual Generation Style</label>
+                    <select
+                      className="form-control"
+                      value={magicForm.visual_style}
+                      onChange={(e) => setMagicForm({ ...magicForm, visual_style: e.target.value as any })}
+                      disabled={magicGenerating}
+                    >
+                      <option value="stock_broll">🎬 Dynamic B-Roll & Footage (Pexels / Motion) [FREE]</option>
+                      <option value="ai_avatar">👤 AI Influencer / Virtual Host (HeyGen / D-ID)</option>
+                      <option value="ai_generative">✨ Generative AI Cinematic Scenes (Runway / Luma)</option>
+                      <option value="motion_graphics">🎨 Minimalist Kinetic Motion Graphics [FREE]</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="form-group">
+                      <label>Target Channel</label>
+                      <select
+                        className="form-control"
+                        value={magicForm.channel_profile_id}
+                        onChange={(e) => setMagicForm({ ...magicForm, channel_profile_id: e.target.value })}
+                        disabled={magicGenerating}
+                      >
+                        <option value="">— Primary Channel Profile —</option>
+                        {channels.map((ch) => (
+                          <option key={ch.id} value={ch.id}>
+                            {ch.name} ({ch.language.toUpperCase()})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Tone of Voice</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={magicForm.tone}
+                        onChange={(e) => setMagicForm({ ...magicForm, tone: e.target.value })}
+                        disabled={magicGenerating}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    style={{
+                      marginTop: '8px',
+                      background: magicGenerating ? 'var(--bg-card)' : 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+                      borderColor: '#d97706',
+                      color: magicGenerating ? 'var(--text-muted)' : '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '15px',
+                      padding: '12px',
+                    }}
+                    disabled={magicGenerating || !magicForm.prompt.trim()}
+                  >
+                    {magicGenerating ? '⏳ Orchestrating Video Generation...' : '✨ Generate Complete Video in 1-Click'}
+                  </button>
+
+                  {magicGenerating && (
+                    <div style={{ background: 'var(--bg-main)', padding: '14px', borderRadius: '8px', border: '1px solid var(--accent-amber)', marginTop: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '16px', height: '16px', border: '2px solid #f59e0b', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                        <strong style={{ fontSize: '13px', color: '#f59e0b' }}>AI Pipeline Running:</strong>
+                      </div>
+                      <div style={{ fontSize: '12.5px', marginTop: '6px', color: 'var(--text-primary)' }}>
+                        {magicStep || 'Initializing pipeline...'}
+                      </div>
+                    </div>
+                  )}
+                </form>
+              </div>
+
+              {/* Right Column: Output Video Player & Pipeline Overview */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {magicResult ? (
+                  <div className="card" style={{ borderTop: '3px solid #10b981' }}>
+                    <div className="card-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '18px', color: '#10b981' }}>🎬</span>
+                        <span className="card-title">Generated Video Ready</span>
+                      </div>
+                      <span className="badge badge-success">RENDER VALIDATED</span>
+                    </div>
+
+                    <div style={{ marginBottom: '14px' }}>
+                      <div style={{ fontWeight: 600, fontSize: '15px' }}>{magicResult.title}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Format: {magicResult.format === 'short' ? '9:16 Vertical Short' : '16:9 Long-Form'} • {magicResult.resolution} • {magicResult.duration_seconds}s • {magicResult.scene_count} Scenes
+                      </div>
+                    </div>
+
+                    {/* HTML5 Video Player */}
+                    <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', maxHeight: '380px', display: 'flex', justifyContent: 'center' }}>
+                      <video
+                        key={magicResult.project_id}
+                        controls
+                        autoPlay
+                        style={{ maxHeight: '380px', width: magicResult.format === 'short' ? 'auto' : '100%', objectFit: 'contain' }}
+                        src={magicResult.preview_url}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                      <button
+                        className="btn-primary"
+                        style={{ flex: 1, background: '#ef4444', borderColor: '#dc2626' }}
+                        onClick={() => {
+                          setSelectedProjectId(magicResult.project_id);
+                          setActiveTab('upload');
+                        }}
+                      >
+                        🚀 Review &amp; Upload to YouTube
+                      </button>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => {
+                          setSelectedProjectId(magicResult.project_id);
+                          setActiveTab('render');
+                        }}
+                      >
+                        🎞️ Render Details
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="card">
+                    <div className="card-header">
+                      <span className="card-title">How 1-Prompt Automation Works</span>
+                      <span className="badge badge-neutral">END-TO-END</span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(245,158,11,0.2)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>
+                          1
+                        </div>
+                        <div>
+                          <strong>Prompt to Script &amp; Timed Scene Breakdown:</strong>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Breaks down your topic into 4–6 timed scenes with visual descriptions, viral hooks, and on-screen text callouts.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>
+                          2
+                        </div>
+                        <div>
+                          <strong>Voiceover Audio Synthesis:</strong>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Generates natural human-like voiceover narration using Windows SAPI (offline, zero-cost) or external TTS.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(59,130,246,0.2)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>
+                          3
+                        </div>
+                        <div>
+                          <strong>Visual Scene Generation (B-Roll or Avatar):</strong>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Sources matching HD 9:16 vertical video clips via Pexels Video API or generates sleek dynamic motion graphics.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(239,68,68,0.2)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>
+                          4
+                        </div>
+                        <div>
+                          <strong>FFmpeg Stitching &amp; Kinetic Captions:</strong>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Stitches visual scenes, syncs voiceover, burns centered yellow/white captions, and validates with FFprobe.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
