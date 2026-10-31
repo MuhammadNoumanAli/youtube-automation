@@ -82,11 +82,14 @@ export class MagicVideoService {
     this.logger.log(`[Magic Studio] Initiating 1-Click Generation for prompt: "${dto.prompt}"`);
 
     // 1. Resolve Channel Profile
-    let channelId = dto.channel_profile_id;
+    let channelId = dto.channel_profile_id && dto.channel_profile_id.trim().length > 0
+      ? dto.channel_profile_id.trim()
+      : null;
+
     if (!channelId) {
-      const firstChannel = await this.channelRepo.findOne({ order: { created_at: 'ASC' } });
-      if (firstChannel) {
-        channelId = firstChannel.id;
+      const channels = await this.channelRepo.find({ order: { created_at: 'ASC' }, take: 1 });
+      if (channels.length > 0) {
+        channelId = channels[0].id;
       } else {
         const autoChannel = this.channelRepo.create({
           name: 'AI Automation Channel',
@@ -189,10 +192,10 @@ export class MagicVideoService {
     const outputPath = path.join(this.getRendersDir(), outputFilename);
 
     // Construct concat input file for FFmpeg to stitch scene clips smoothly
-    const concatListPath = path.join(this.getAssetsDir(), `concat_${project.id}_${Date.now()}.txt`);
+    const concatListPath = path.resolve(this.getAssetsDir(), `concat_${project.id}_${Date.now()}.txt`);
     const concatFileContent = sceneClips
-      .map((clip) => `file '${clip.filePath.replace(/\\/g, '/')}'`)
-      .join('\n');
+      .map((clip) => `file '${path.basename(clip.filePath)}'`)
+      .join('\n') + '\n';
     fs.writeFileSync(concatListPath, concatFileContent, 'utf-8');
 
     // Create RenderJob record
@@ -217,6 +220,10 @@ export class MagicVideoService {
       narration.storage_path,
       '-vf',
       captionOverlays,
+      '-map',
+      '0:v:0',
+      '-map',
+      '1:a:0',
       '-c:v',
       'libx264',
       '-preset',
@@ -433,7 +440,7 @@ export class MagicVideoService {
 
     // Header badge
     filters.push(
-      `drawtext=text='YOUTUBE AUTOMATION STUDIO':fontcolor=0xef4444:fontsize=${isShort ? 18 : 22}:x=(w-text_w)/2:y=${isShort ? 80 : 40}`,
+      `drawtext=text='YOUTUBE AUTOMATION STUDIO':fontcolor=red:fontsize=${isShort ? 18 : 22}:x=(w-text_w)/2:y=${isShort ? 80 : 40}`,
     );
 
     scenes.forEach((scene, idx) => {
@@ -450,7 +457,7 @@ export class MagicVideoService {
 
       // Main Hook Text (Bright Yellow Bold Font, Centered)
       filters.push(
-        `drawtext=text='${onScreenText}':fontcolor=0xfacc15:fontsize=${isShort ? 30 : 36}:x=(w-text_w)/2:y=(h-text_h)/2-20:enable='between(t,${startTime},${endTime})'`,
+        `drawtext=text='${onScreenText}':fontcolor=yellow:fontsize=${isShort ? 30 : 36}:x=(w-text_w)/2:y=(h-text_h)/2-20:enable='between(t,${startTime},${endTime})'`,
       );
 
       // Sub-caption (Crisp White with dark shadow)

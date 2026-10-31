@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MagicGenerateDto } from './dto/magic-generate.dto';
 import { MagicVideoService } from './magic-video.service';
@@ -18,7 +18,12 @@ export class MagicVideoController {
     description: 'Finished video rendered and validated, ready for review and upload',
   })
   async generateVideo(@Body() dto: MagicGenerateDto): Promise<MagicGenerationResult> {
-    return this.magicService.generateOneClickVideo(dto);
+    try {
+      return await this.magicService.generateOneClickVideo(dto);
+    } catch (err: any) {
+      console.error('[MagicController] Generation error:', err);
+      throw new BadRequestException(err.message || 'Magic video generation failed');
+    }
   }
 
   @Get('presets')
