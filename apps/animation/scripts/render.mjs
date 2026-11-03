@@ -10,9 +10,14 @@
  * of stills, and saves <name>.metrics.json and <name>.report.md next to the video. It uses the ffmpeg/ffprobe binaries
  * shipped inside Remotion's compositor package, so nothing else needs to be installed.
  *
+ * Voiced compositions (Phase 3): add --audio-dir <TTS_AUDIO_ROOT>\videos\<videoId>. The voice manifest in that folder
+ * is passed to the composition as input props and its public\ folder becomes Remotion's public dir (staticFile).
+ * The render is refused if the manifest is incomplete or the voice script changed after the audio was generated.
+ *
  * Safety: writes only into --out's folder and --cache. Never deletes. If the output exists, the new file gets a
  * timestamp suffix. No Remotion licence key is passed, so no usage telemetry is sent (Remotion prints a warning).
  */
+import './localhost-ipv4.mjs'; // must stay first: fixes ECONNREFUSED ::1 when Remotion downloads the voice WAVs on Windows
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,6 +25,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { bundle } from '@remotion/bundler';
 import { ensureBrowser, renderMedia, selectComposition } from '@remotion/renderer';
+import { scriptHash } from '../voice/generate.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const moduleRoot = path.resolve(here, '..');
@@ -35,6 +41,7 @@ const requestedOut = path.resolve(args.out ?? path.join(moduleRoot, 'out', `${co
 const cacheDir = path.resolve(args.cache ?? path.join(moduleRoot, '.cache'));
 const concurrency = Math.max(1, parseInt(args.concurrency ?? '2', 10) || 2);
 const browserExecutable = args.browser ? path.resolve(args.browser) : null;
+const audioDir = args['audio-dir'] ? path.resolve(args['audio-dir']) : null;
 const drives = String(args.drives ?? (process.platform === 'win32' ? 'C:\\,D:\\,E:\\' : '/'))
   .split(',')
   .map((d) => d.trim())
@@ -132,6 +139,41 @@ const report = {
   tmpdir: os.tmpdir(),
   diskBefore: diskFree(),
 };
+// ---- voice manifest (voiced compositions only); checked before anything is bundled or rendered
+let inputProps = {};
+let publicDir = null;
+if (audioDir) {
+  const refuse = (msg) => {
+    console.error(`[render] REFUSED: ${msg}`);
+    process.exit(1);
+  };
+  const manifestFile = path.join(audioDir, 'voice-manifest.json');
+  if (!fs.existsSync(manifestFile)) refuse(`no voice manifest at ${manifestFile}. Run scripts\\voice.ps1 first.`);
+  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+  if (!manifest.complete) refuse(`voice manifest is incomplete (${manifest.stats?.failed ?? '?'} line(s) failed). See ${manifestFile}.`);
+  if (manifest.scriptFile) {
+    const scriptPath = path.join(moduleRoot, manifest.scriptFile);
+    if (!fs.existsSync(scriptPath)) refuse(`voice script ${scriptPath} not found.`);
+    if (scriptHash(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) !== manifest.scriptHash)
+      refuse(`${manifest.scriptFile} changed after the audio was generated. Run scripts\\voice.ps1 again.`);
+  }
+  publicDir = path.join(audioDir, 'public');
+  const missing = manifest.lines.filter((l) => !l.file || !fs.existsSync(path.join(publicDir, l.file)));
+  if (missing.length) refuse(`audio missing for: ${missing.map((l) => l.id).join(', ')}`);
+  if (manifest.test) console.warn('[render] WARNING: this manifest uses FAKE test tones, not real voices.');
+  inputProps = { manifest };
+  report.voice = {
+    manifest: manifestFile,
+    lines: manifest.lines.length,
+    audioSeconds: manifest.stats?.totalAudioSeconds,
+    fallbacks: manifest.stats?.fallbacks,
+    test: manifest.test,
+    attributions: manifest.attributions,
+    credits: manifest.credits,
+  };
+  console.log(`[render] voice: ${manifest.lines.length} lines from ${manifestFile}`);
+}
+
 fs.mkdirSync(path.dirname(requestedOut), { recursive: true });
 fs.mkdirSync(cacheDir, { recursive: true });
 const out = uniquePath(requestedOut);
@@ -149,11 +191,12 @@ const serveUrl = await bundle({
   entryPoint: path.join(moduleRoot, 'src', 'index.ts'),
   outDir: path.join(cacheDir, `bundle-${Date.now()}`),
   onProgress: () => {},
+  ...(publicDir ? { publicDir } : {}),
 });
 report.bundleSeconds = (Date.now() - tb) / 1000;
 console.log(`[render] bundled in ${report.bundleSeconds.toFixed(1)} s`);
 
-const composition = await selectComposition({ serveUrl, id: compositionId, inputProps: {}, logLevel: 'warn', browserExecutable });
+const composition = await selectComposition({ serveUrl, id: compositionId, inputProps, logLevel: 'warn', browserExecutable });
 const expectedSeconds = composition.durationInFrames / composition.fps;
 report.compositionInfo = {
   width: composition.width,
@@ -169,6 +212,7 @@ let last = -10;
 await renderMedia({
   composition,
   serveUrl,
+  inputProps,
   codec: 'h264',
   crf: 18,
   x264Preset: 'veryfast',
@@ -222,7 +266,14 @@ if (pr.status === 0) {
     duration: Math.abs(dur - expectedSeconds) <= 0.1,
     frameCount: v.nb_frames === undefined ? null : parseInt(v.nb_frames, 10) === composition.durationInFrames,
   };
-  probe = { ok: Object.values(checks).every((c) => c !== false), checks, stream: v, durationSeconds: dur, sizeMB: mb(+j.format.size) };
+  let audioStream;
+  if (audioDir) {
+    const ar = run('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name,sample_rate,channels', '-of', 'json', out]);
+    const a = ar.status === 0 ? JSON.parse(ar.stdout).streams?.[0] : null;
+    checks.audioTrack = Boolean(a) && a.codec_name === 'aac';
+    audioStream = a ?? null;
+  }
+  probe = { audioStream, ok: Object.values(checks).every((c) => c !== false), checks, stream: v, durationSeconds: dur, sizeMB: mb(+j.format.size) };
 }
 report.probe = probe;
 
@@ -280,6 +331,13 @@ const md = [
     : '| no frozen stretch > 2 s | NOT RUN (no full ffmpeg) |',
   `Content checks used: ${report.content.ffmpeg ?? 'none'}`,
   '',
+  ...(report.voice
+    ? [
+        `Voice: ${report.voice.lines} lines, ${report.voice.audioSeconds} s of speech, ${report.voice.fallbacks} fallback(s)${report.voice.test ? ' (FAKE TEST TONES)' : ''}`,
+        ...(report.voice.attributions.length ? ['Attribution required in the video description:', ...report.voice.attributions.map((a) => `- ${a}`)] : []),
+        '',
+      ]
+    : []),
   `Contact sheet: ${report.contactSheet}`,
   `Disk free before: ${JSON.stringify(report.diskBefore)}`,
   `Disk free after:  ${JSON.stringify(report.diskAfter)}`,

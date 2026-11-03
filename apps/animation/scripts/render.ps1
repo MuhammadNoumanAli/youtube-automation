@@ -6,6 +6,8 @@
     powershell -ExecutionPolicy Bypass -File D:\wamp64\www\youtube-automation\apps\animation\scripts\render.ps1
     ... render.ps1 -Composition Spike -Out E:\YouTubeStudio\spike\spike.mp4
     ... render.ps1 -Concurrency 3
+    ... render.ps1 -Composition NetherlandsVoiced -Out E:\YouTubeStudio\prototype\netherlands-voiced.mp4 `
+                   -AudioDir D:\YouTubeStudio\audio\videos\NetherlandsVoiced      (run scripts\voice.ps1 first)
 
   Steps: git status + free space (read-only) -> npm cache and TEMP/TMP to E: for this session only ->
   install into apps\animation only if node_modules is missing (npm ci --workspaces=false) -> verify the root
@@ -19,7 +21,8 @@ param(
   [string]$Composition = "NetherlandsDemo",
   [string]$Out = "E:\YouTubeStudio\prototype\netherlands-demo.mp4",
   [string]$Concurrency = "2",
-  [string]$StudioRoot = "E:\YouTubeStudio"
+  [string]$StudioRoot = "E:\YouTubeStudio",
+  [string]$AudioDir = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -75,7 +78,9 @@ try {
   Write-Host "Root package.json / package-lock.json unchanged: OK" -ForegroundColor Green
 
   Section "RENDER $Composition"
-  node scripts\render.mjs --composition $Composition --out $Out --cache $RemotionCache --concurrency $Concurrency --drives "C:\,D:\,E:\"
+  $renderArgs = @('scripts\render.mjs', '--composition', $Composition, '--out', $Out, '--cache', $RemotionCache, '--concurrency', $Concurrency, '--drives', 'C:\,D:\,E:\')
+  if ($AudioDir) { $renderArgs += @('--audio-dir', $AudioDir) }
+  node @renderArgs
   $renderExit = $LASTEXITCODE
 } finally {
   Pop-Location
