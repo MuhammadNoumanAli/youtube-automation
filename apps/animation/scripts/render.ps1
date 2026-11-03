@@ -14,7 +14,8 @@
   package.json/package-lock.json are unchanged -> render -> FFprobe, black-frame and freeze checks, contact sheet,
   metrics and report next to the video -> git status.
 
-  Never deletes anything. Existing outputs are kept; new files get a timestamp suffix.
+  Never deletes existing files. Existing outputs are kept; new files get a timestamp suffix. Voiced renders
+  (-AudioDir) are loudness-mastered to -14 LUFS; the intermediate file this creates in the cache is removed after.
   Does not touch .env, the database, storage folders, the API or the web app.
 #>
 param(
@@ -28,16 +29,19 @@ param(
 $ErrorActionPreference = 'Stop'
 $ModuleDir = Split-Path -Parent $PSScriptRoot
 $RepoRoot = (Resolve-Path (Join-Path $ModuleDir '..\..')).Path
-$OutDir = Split-Path -Parent $Out
-$TmpDir = Join-Path $StudioRoot 'tmp'
-$NpmCache = Join-Path $StudioRoot 'cache\npm'
-$RemotionCache = Join-Path $StudioRoot 'cache\remotion'
 
 function Section($t) { Write-Host ""; Write-Host "===== $t =====" -ForegroundColor Cyan }
 function Stop-Run($msg) { Write-Host "STOPPED: $msg" -ForegroundColor Red; try { Stop-Transcript | Out-Null } catch {}; exit 1 }
 
-$StudioDrive = Split-Path -Qualifier $StudioRoot
-if (-not (Test-Path "$StudioDrive\")) { Write-Host "STOPPED: drive $StudioDrive not found." -ForegroundColor Red; exit 1 }
+# Check the drives exist before building any path on them (an unplugged E: otherwise fails with a cryptic error).
+$StudioDrive = $StudioRoot.Substring(0, 2)
+if (-not (Test-Path "$StudioDrive\")) { Write-Host "STOPPED: drive $StudioDrive (StudioRoot) not found. Is the external drive connected? Or pass -StudioRoot D:\YouTubeStudio" -ForegroundColor Red; exit 1 }
+$OutDrive = $Out.Substring(0, 2)
+if (-not (Test-Path "$OutDrive\")) { Write-Host "STOPPED: drive $OutDrive (output) not found. Is the external drive connected? Or pass -Out D:\..." -ForegroundColor Red; exit 1 }
+$OutDir = Split-Path -Parent $Out
+$TmpDir = Join-Path $StudioRoot 'tmp'
+$NpmCache = Join-Path $StudioRoot 'cache\npm'
+$RemotionCache = Join-Path $StudioRoot 'cache\remotion'
 New-Item -ItemType Directory -Force -Path $OutDir, $TmpDir, $NpmCache, $RemotionCache | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 Start-Transcript -Path (Join-Path $OutDir "run-$Composition-$stamp.log") | Out-Null
@@ -51,7 +55,8 @@ foreach ($d in 'C','D','E') {
   $info = Get-PSDrive -Name $d -ErrorAction SilentlyContinue
   if ($info) { $drives[$d] = [math]::Round($info.Free / 1GB, 2); Write-Host ("{0}:  free {1} GB" -f $d, $drives[$d]) }
 }
-if (-not $drives.ContainsKey('E') -or $drives['E'] -lt 5) { Stop-Run "E: has less than 5 GB free." }
+$studioLetter = $StudioDrive.TrimEnd(':')
+if (-not $drives.ContainsKey($studioLetter) -or $drives[$studioLetter] -lt 5) { Stop-Run "$StudioDrive (StudioRoot) has less than 5 GB free." }
 if ($drives.ContainsKey('D') -and $drives['D'] -lt 1) { Stop-Run "D: has less than 1 GB free." }
 
 $env:npm_config_cache = $NpmCache

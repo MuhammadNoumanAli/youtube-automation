@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "_readme": "Only files listed here can be used as music or sound effects. Each needs kind (music|sfx), an absolute file path, its SHA-256 (Get-FileHash -Algorithm SHA256), licence, source URL or 'own recording', commercialUse: true, and attribution text if the licence requires credit. Files are copied, never moved. See README 'Music and sound effects'.",
+  "items": []
+}

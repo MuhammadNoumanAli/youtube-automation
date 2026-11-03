@@ -53,6 +53,15 @@ export interface HopSpec {
   period: number;
 }
 
+/** A stretch of speech: the character bounces and squashes with the loudness of its own voice. */
+export interface TalkSegment {
+  from: number;
+  to: number;
+  /** 0..1 loudness values, `rate` per second, starting at `from`. */
+  envelope: number[];
+  rate: number;
+}
+
 export interface CharacterInScene {
   /** Id of a CharacterDefinition. */
   ref: string;
@@ -79,6 +88,8 @@ export interface CharacterInScene {
   showName?: boolean;
   /** Seed for blinking so characters never blink in sync. */
   blinkSeed?: string;
+  /** Speech segments (normally generated from the voice manifest by applyVoiceTiming). */
+  talk?: TalkSegment[];
 }
 
 // ---------------------------------------------------------------- backgrounds

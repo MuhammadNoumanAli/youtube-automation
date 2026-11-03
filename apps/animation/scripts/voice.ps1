@@ -39,7 +39,10 @@ if ([int]($nodeVersion.TrimStart('v').Split('.')[0]) -lt 22) { Stop-Run "Node 22
 Write-Host "Node $nodeVersion"
 $audioDrive = Get-PSDrive -Name $AudioRoot.Substring(0, 1) -ErrorAction SilentlyContinue
 if ($audioDrive -and ($audioDrive.Free / 1GB) -lt 1) { Stop-Run "Less than 1 GB free on $($AudioRoot.Substring(0, 2))." }
-foreach ($p in @($RuntimeDir, $KokoroDir)) { if (-not (Test-Path -LiteralPath $p)) { Stop-Run "Not found: $p" } }
+if (-not (Test-Path -LiteralPath $KokoroDir)) { Stop-Run "Not found: $KokoroDir" }
+if (-not (Test-Path -LiteralPath $RuntimeDir)) {
+  Write-Host "WARNING: runtime not found at $RuntimeDir (is the E: drive connected?). Only cached lines can be used." -ForegroundColor Yellow
+}
 foreach ($v in 'en_US-ljspeech-high', 'en_US-libritts-high') {
   if (-not (Test-Path -LiteralPath (Join-Path $PiperDir "$v\$v.onnx"))) {
     Stop-Run "Piper voice $v not found under $PiperDir. Run scripts\copy-piper-to-d.ps1 first (or pass -PiperDir)."

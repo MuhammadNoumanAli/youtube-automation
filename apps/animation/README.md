@@ -115,6 +115,27 @@ node --test "voice/test/*.test.mjs"
   language, licence, attribution, cache and fallback information.
 - `render.mjs --audio-dir` refuses to render if the manifest is incomplete or the voice script changed afterwards.
 
+**Loudness.** Voiced renders are mastered after Remotion finishes: two-pass FFmpeg `loudnorm` to -14 LUFS integrated,
+true peak at most -1.5 dBTP (YouTube's playback level), video stream copied untouched. The report shows before/after
+and fails the render if the result is off by more than 1 LU or peaks above -1 dBTP.
+
+**Talking animation.** The voice step stores each line's loudness envelope (50 values per second) in the manifest.
+A character on screen bounces and stretches with its own voice while it speaks; the narrator never animates a ball.
+
+**Music and sound effects.** Only files listed in `src/audio-library.json` can be used, and only if the entry has
+`commercialUse: true`, a licence, a source and a SHA-256 that matches the file (attribution text too when the licence
+requires credit). Add to a voice script:
+
+```json
+"music": { "id": "calm-theme", "volume": 0.25, "duckVolume": 0.08 },
+"sfx": [{ "id": "splash", "scene": "conflict", "at": 140, "volume": 0.8 }]
+```
+
+Library entry: `{ "id": "calm-theme", "kind": "music", "file": "E:\\YouTubeStudio\\library\\music\\calm-theme.mp3",
+"sha256": "<Get-FileHash -Algorithm SHA256>", "licence": "...", "source": "https://... or own recording",
+"commercialUse": true, "attributionRequired": false }`. Music loops, fades in and out, and dips under speech.
+A refused file marks the manifest incomplete, so the render is refused too. The library starts empty.
+
 **Voice licences.** Kokoro-82M weights: Apache-2.0. Piper `en_US-libritts-high`: CC BY 4.0, so **attribution is
 required** in the video description (the manifest and render report print the exact line). Piper
 `en_US-ljspeech-high`: public domain. The Lessac voices are research-only and are not in the catalogue. The sherpa

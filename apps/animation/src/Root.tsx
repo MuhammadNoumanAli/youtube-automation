@@ -27,7 +27,7 @@ const voicedTiming = (manifest: VoiceManifest | null) => applyVoiceTiming(nether
 }
 const NetherlandsVoiced: React.FC<VoicedProps> = ({ manifest }) => {
   const t = voicedTiming(manifest);
-  return <VoicedVideoRenderer video={t.video} lines={t.lines} />;
+  return <VoicedVideoRenderer video={t.video} lines={t.lines} manifest={manifest} />;
 };
 
 export const RemotionRoot: React.FC = () => (

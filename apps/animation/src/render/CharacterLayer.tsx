@@ -11,7 +11,7 @@ const val = (frame: number, keys: NumberKey[] | undefined, fallback: number) =>
 
 /**
  * Turns one CharacterInScene (keyframed data) into CountryBall props for the current frame.
- * Handles stage/geo positions, hops with landing squash, shakes, and entry/exit animations.
+ * Handles stage/geo positions, hops with landing squash, talking, shakes, and entry/exit animations.
  */
 export const CharacterLayer: React.FC<{
   c: CharacterInScene;
@@ -55,6 +55,18 @@ export const CharacterLayer: React.FC<{
       const t = (frame - h.to) / 20;
       squash += Math.sin(t * Math.PI * 2) * 0.14 * (1 - t);
     }
+  }
+
+  // ---- talking: bounce and stretch with the loudness of the character's own voice (from the voice manifest)
+  for (const t of c.talk ?? []) {
+    if (frame < t.from || frame >= t.to || t.envelope.length === 0) continue;
+    const pos = ((frame - t.from) / fps) * t.rate;
+    const i = Math.floor(pos);
+    const a = t.envelope[Math.min(i, t.envelope.length - 1)] ?? 0;
+    const b = t.envelope[Math.min(i + 1, t.envelope.length - 1)] ?? a;
+    const level = a + (b - a) * (pos - i);
+    lift += level * 10;
+    squash -= level * 0.07; // negative = taller and narrower
   }
 
   // ---- rotation and shakes

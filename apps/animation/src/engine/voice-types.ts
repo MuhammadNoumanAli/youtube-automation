@@ -40,6 +40,21 @@ export interface VoiceScript {
   characters: Record<string, VoiceAssignment>;
   lines: DialogueLine[];
   timing?: { gapFrames?: number; tailFrames?: number; leadFrames?: number };
+  /** Background music from src/audio-library.json (licence-checked). Ducked under speech. */
+  music?: { id: string; volume?: number; duckVolume?: number; fadeInFrames?: number; fadeOutFrames?: number };
+  /** Sound effects from src/audio-library.json, placed at a scene-local frame. */
+  sfx?: { id: string; scene: string; at?: number; volume?: number }[];
+}
+
+export interface AudioAsset {
+  id: string;
+  /** Path relative to the render's public folder. */
+  file: string;
+  durationMs: number | null;
+  licence: string;
+  source: string;
+  attribution: string | null;
+  attributionRequired: boolean;
 }
 
 export interface LineAudio {
@@ -68,6 +83,9 @@ export interface LineAudio {
   fallbackUsed?: boolean;
   fallbackReason?: string;
   error?: string;
+  /** Loudness over time, 0..1, `envelopeRate` values per second (drives the talking animation). */
+  envelope?: number[];
+  envelopeRate?: number;
 }
 
 export interface VoiceManifest {
@@ -81,4 +99,9 @@ export interface VoiceManifest {
   lines: LineAudio[];
   attributions: string[];
   credits: string[];
+  assets?: {
+    music: (AudioAsset & { volume: number; duckVolume: number; fadeInFrames: number; fadeOutFrames: number }) | null;
+    sfx: (AudioAsset & { scene: string; at: number; volume: number })[];
+  };
+  assetProblems?: string[];
 }

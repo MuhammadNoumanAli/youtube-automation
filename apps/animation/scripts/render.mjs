@@ -14,6 +14,11 @@
  * is passed to the composition as input props and its public\ folder becomes Remotion's public dir (staticFile).
  * The render is refused if the manifest is incomplete or the voice script changed after the audio was generated.
  *
+ * Voiced renders are also loudness-mastered: Remotion renders to an intermediate file in --cache, then FFmpeg applies
+ * a gentle compressor, a gain to about -14 LUFS and a peak limiter (speech peaks are too high for gain alone), and
+ * a two-pass loudnorm fine-tunes to -14 LUFS integrated with true peak <= -1.5 dBTP (YouTube's playback level). The
+ * audio is trimmed to the exact video length; the video stream is copied untouched. The report checks the result.
+ *
  * Safety: writes only into --out's folder and --cache. Never deletes. If the output exists, the new file gets a
  * timestamp suffix. No Remotion licence key is passed, so no usage telemetry is sent (Remotion prints a warning).
  */
@@ -94,7 +99,7 @@ function spawnBin(bin, dir, argv) {
  * reported as "not run", never as passed.
  */
 const NEEDED_FILTERS = ['blackdetect', 'freezedetect', 'fps', 'tile', 'scale'];
-function findAnalysisFfmpeg() {
+function findAnalysisFfmpeg(needed = NEEDED_FILTERS) {
   const bundled = remotionBinary('ffmpeg');
   const candidates = [
     args.ffmpeg && { bin: args.ffmpeg, dir: undefined },
@@ -106,7 +111,7 @@ function findAnalysisFfmpeg() {
     const r = spawnBin(c.bin, c.dir, ['-hide_banner', '-filters']);
     if (r.status !== 0 || !r.stdout) continue;
     const names = new Set(r.stdout.split('\n').map((l) => l.trim().split(/\s+/)[1]).filter(Boolean));
-    if (NEEDED_FILTERS.every((f) => names.has(f))) return c;
+    if (needed.every((f) => names.has(f))) return c;
   }
   return null;
 }
@@ -170,6 +175,8 @@ if (audioDir) {
     test: manifest.test,
     attributions: manifest.attributions,
     credits: manifest.credits,
+    music: manifest.assets?.music ? `${manifest.assets.music.id} (${manifest.assets.music.licence})` : null,
+    sfx: manifest.assets?.sfx?.length ? manifest.assets.sfx.map((x) => `${x.id} (${x.licence})`).join(', ') : null,
   };
   console.log(`[render] voice: ${manifest.lines.length} lines from ${manifestFile}`);
 }
@@ -178,6 +185,7 @@ fs.mkdirSync(path.dirname(requestedOut), { recursive: true });
 fs.mkdirSync(cacheDir, { recursive: true });
 const out = uniquePath(requestedOut);
 const stem = out.replace(/\.mp4$/i, '');
+const renderTarget = audioDir ? path.join(cacheDir, `premaster-${Date.now()}.mp4`) : out;
 
 console.log(`[render] ${compositionId} -> ${out}`);
 console.log(`[render] temp dir: ${os.tmpdir()}`);
@@ -218,7 +226,7 @@ await renderMedia({
   x264Preset: 'veryfast',
   pixelFormat: 'yuv420p',
   colorSpace: 'bt709',
-  outputLocation: out,
+  outputLocation: renderTarget,
   concurrency,
   overwrite: false,
   browserExecutable,
@@ -247,6 +255,56 @@ report.estimates = {
   '10min': fmt(spf * 600 * composition.fps),
 };
 
+// ---- loudness mastering (voiced renders only)
+const LOUDNESS = { I: -14, TP: -1.5, LRA: 11 };
+function measureLoudness(ffmpeg, file) {
+  const r = spawnBin(ffmpeg.bin, ffmpeg.dir, ['-hide_banner', '-nostats', '-i', file, '-vn', '-af', 'ebur128=peak=true', '-f', 'null', '-']);
+  const summary = (r.stderr ?? '').split('Summary:').pop();
+  const I = parseFloat(/I:\s+(-?[\d.]+) LUFS/.exec(summary)?.[1] ?? 'NaN');
+  const TP = parseFloat(/True peak:\s+Peak:\s+(-?[\d.]+|-inf) dBFS/.exec(summary)?.[1] ?? 'NaN');
+  return { integratedLUFS: I, truePeakDBTP: TP };
+}
+if (audioDir) {
+  const mf = findAnalysisFfmpeg(['loudnorm', 'ebur128']);
+  if (!mf) {
+    fs.copyFileSync(renderTarget, out);
+    report.mastering = { ok: false, note: 'No ffmpeg with loudnorm/ebur128 found; audio NOT loudness-normalised.' };
+    console.warn(`[render] WARNING: ${report.mastering.note}`);
+  } else {
+    const before = measureLoudness(mf, renderTarget);
+    const target = `I=${LOUDNESS.I}:TP=${LOUDNESS.TP}:LRA=${LOUDNESS.LRA}`;
+    // Stage 1: compressor, gain to the target, limiter at -3 dBFS, so stage 2 can stay linear.
+    const comp = 'acompressor=threshold=-24dB:ratio=2.5:attack=5:release=120';
+    const rc = spawnBin(mf.bin, mf.dir, ['-hide_banner', '-nostats', '-i', renderTarget, '-vn', '-af', `${comp},ebur128`, '-f', 'null', '-']);
+    const compressedI = parseFloat(/I:\s+(-?[\d.]+) LUFS/.exec((rc.stderr ?? '').split('Summary:').pop())?.[1] ?? 'NaN');
+    const gainDb = Number.isFinite(compressedI) ? Math.max(-20, Math.min(30, LOUDNESS.I - compressedI)) : 0;
+    const pre = `${comp},volume=${gainDb.toFixed(2)}dB,alimiter=limit=0.708:attack=3:release=60:level=0`;
+    const endSample = Math.round(expectedSeconds * 48000);
+    const p1 = spawnBin(mf.bin, mf.dir, ['-hide_banner', '-nostats', '-i', renderTarget, '-vn', '-af', `${pre},loudnorm=${target}:print_format=json`, '-f', 'null', '-']);
+    const json = (p1.stderr ?? '').match(/\{[^{}]*"input_i"[^{}]*\}/);
+    if (p1.status !== 0 || !json) {
+      fs.copyFileSync(renderTarget, out);
+      report.mastering = { ok: false, note: `loudnorm analysis failed: ${(p1.stderr ?? '').slice(-400)}` };
+    } else {
+      const m = JSON.parse(json[0]);
+      const p2 = spawnBin(mf.bin, mf.dir, [
+        '-hide_banner', '-v', 'error', '-i', renderTarget, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy',
+        '-af', `${pre},loudnorm=${target}:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true,aresample=48000,apad,atrim=end_sample=${endSample}`,
+        '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', '-n', out,
+      ]);
+      if (p2.status !== 0) {
+        fs.copyFileSync(renderTarget, out);
+        report.mastering = { ok: false, note: `loudnorm pass 2 failed: ${p2.stderr}` };
+      } else {
+        const after = measureLoudness(mf, out);
+        report.mastering = { ok: true, target: LOUDNESS, before, after, gainDb: Math.round(gainDb * 100) / 100, ffmpeg: mf.bin };
+        fs.unlinkSync(renderTarget); // only the intermediate file this run created in --cache
+      }
+    }
+  }
+  console.log(`[render] mastering: ${report.mastering.ok ? `${report.mastering.before.integratedLUFS} -> ${report.mastering.after.integratedLUFS} LUFS, true peak ${report.mastering.after.truePeakDBTP} dBTP` : report.mastering.note}`);
+}
+
 // ---- FFprobe
 const pr = run('ffprobe', [
   '-v', 'error', '-select_streams', 'v:0',
@@ -271,6 +329,9 @@ if (pr.status === 0) {
     const ar = run('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name,sample_rate,channels', '-of', 'json', out]);
     const a = ar.status === 0 ? JSON.parse(ar.stdout).streams?.[0] : null;
     checks.audioTrack = Boolean(a) && a.codec_name === 'aac';
+    const lm = report.mastering?.after;
+    checks.loudness = Boolean(report.mastering?.ok) && Math.abs(lm.integratedLUFS - LOUDNESS.I) <= 1;
+    checks.truePeak = Boolean(report.mastering?.ok) && lm.truePeakDBTP <= -1.0;
     audioStream = a ?? null;
   }
   probe = { audioStream, ok: Object.values(checks).every((c) => c !== false), checks, stream: v, durationSeconds: dur, sizeMB: mb(+j.format.size) };
@@ -334,6 +395,11 @@ const md = [
   ...(report.voice
     ? [
         `Voice: ${report.voice.lines} lines, ${report.voice.audioSeconds} s of speech, ${report.voice.fallbacks} fallback(s)${report.voice.test ? ' (FAKE TEST TONES)' : ''}`,
+        report.mastering?.ok
+          ? `Loudness: ${report.mastering.before.integratedLUFS} -> ${report.mastering.after.integratedLUFS} LUFS (target ${LOUDNESS.I}), true peak ${report.mastering.after.truePeakDBTP} dBTP`
+          : `Loudness: NOT mastered (${report.mastering?.note})`,
+        ...(report.voice.music ? [`Music: ${report.voice.music}`] : []),
+        ...(report.voice.sfx ? [`Sound effects: ${report.voice.sfx}`] : []),
         ...(report.voice.attributions.length ? ['Attribution required in the video description:', ...report.voice.attributions.map((a) => `- ${a}`)] : []),
         '',
       ]

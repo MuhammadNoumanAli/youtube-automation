@@ -7,13 +7,15 @@
  *   - every line lasts exactly as long as its WAV file (frames = ceil(durationMs * fps / 1000)),
  *   - captions are generated from those timings,
  *   - a scene grows when its dialogue needs more time (never shrinks), keeping a tail and the outgoing
- *     transition clear of speech.
+ *     transition clear of speech,
+ *   - a character on screen gets a talk segment (its own loudness envelope) for each of its lines, so it bounces
+ *     and squashes while it speaks.
  * The input video is not modified. Without a manifest (Studio preview), durations are estimated from word count
  * and the result is marked incomplete; the render script refuses to render an incomplete voiced video.
  *
  * Only type imports here, so this file stays pure and testable outside Remotion.
  */
-import type { Caption, VideoConfig } from './types';
+import type { Caption, TalkSegment, VideoConfig } from './types';
 import type { LineAudio, VoiceManifest, VoiceScript } from './voice-types';
 
 export interface PlacedLine {
@@ -70,6 +72,7 @@ export function applyVoiceTiming(base: VideoConfig, script: VoiceScript, manifes
     const own = script.lines.filter((l) => l.scene === scene.id);
     let cursor = -1;
     const generated: Caption[] = [];
+    const talk = new Map<string, TalkSegment[]>();
     for (const line of own) {
       const a = audio.get(line.id);
       const measured = a && !a.error && a.file && a.durationMs ? a : null;
@@ -90,15 +93,75 @@ export function applyVoiceTiming(base: VideoConfig, script: VoiceScript, manifes
         estimated: !measured,
       });
       generated.push({ from: start, to: start + frames, text: line.text, speaker: line.speaker === 'narrator' ? undefined : line.speaker });
+      if (measured?.envelope?.length && measured.envelopeRate && line.speaker !== 'narrator') {
+        const list = talk.get(line.speaker) ?? [];
+        list.push({ from: start, to: start + frames, envelope: measured.envelope, rate: measured.envelopeRate });
+        talk.set(line.speaker, list);
+      }
     }
     const needed = cursor < 0 ? 0 : cursor + t.tailFrames + (scene.transitionOut?.durationInFrames ?? 0);
     return {
       ...scene,
       durationInFrames: Math.max(scene.durationInFrames, needed),
       captions: [...scene.captions, ...generated].sort((x, y) => x.from - y.from),
+      characters: scene.characters.map((c) => (talk.has(c.ref) ? { ...c, talk: [...(c.talk ?? []), ...talk.get(c.ref)!] } : c)),
     };
   });
 
   const complete = Boolean(manifest) && problems.length === 0 && placed.every((p) => !p.estimated);
   return { video: { ...base, scenes }, lines: placed, problems, complete };
+}
+
+// ------------------------------------------------------------------ music and sound effects
+
+export interface AudioPlan {
+  music: {
+    file: string;
+    volume: number;
+    duckVolume: number;
+    fadeInFrames: number;
+    fadeOutFrames: number;
+    totalFrames: number;
+    /** Global [from, to) frames where someone is speaking. */
+    speech: [number, number][];
+  } | null;
+  sfx: { id: string; file: string; from: number; volume: number }[];
+}
+
+/** Music and SFX placement on the global timeline. `sceneStart` maps scene id to its global start frame. */
+export function buildAudioPlan(
+  lines: PlacedLine[],
+  sceneStart: Record<string, number>,
+  totalFrames: number,
+  manifest: VoiceManifest | null,
+): AudioPlan {
+  const a = manifest?.assets;
+  const speech = lines
+    .filter((l) => l.file)
+    .map((l) => [sceneStart[l.sceneId] + l.startFrame, sceneStart[l.sceneId] + l.startFrame + l.frames] as [number, number]);
+  return {
+    music: a?.music
+      ? { file: a.music.file, volume: a.music.volume, duckVolume: a.music.duckVolume, fadeInFrames: a.music.fadeInFrames, fadeOutFrames: a.music.fadeOutFrames, totalFrames, speech }
+      : null,
+    sfx: (a?.sfx ?? [])
+      .filter((s) => s.scene in sceneStart)
+      .map((s) => ({ id: s.id, file: s.file, from: sceneStart[s.scene] + s.at, volume: s.volume })),
+  };
+}
+
+const DUCK_RAMP = 8; // frames to dip under speech and to come back up
+
+/** Music volume at a global frame: fade in/out at the ends, ducked (with short ramps) while anyone speaks. */
+export function musicVolumeAt(frame: number, music: NonNullable<AudioPlan['music']>): number {
+  let duck = 0;
+  for (const [from, to] of music.speech) {
+    if (frame >= from - DUCK_RAMP && frame <= to + DUCK_RAMP) {
+      const d = frame < from ? (frame - (from - DUCK_RAMP)) / DUCK_RAMP : frame > to ? 1 - (frame - to) / DUCK_RAMP : 1;
+      duck = Math.max(duck, Math.max(0, Math.min(1, d)));
+    }
+  }
+  const level = music.volume + (music.duckVolume - music.volume) * duck;
+  const fadeIn = music.fadeInFrames > 0 ? Math.min(1, frame / music.fadeInFrames) : 1;
+  const fadeOut = music.fadeOutFrames > 0 ? Math.min(1, (music.totalFrames - frame) / music.fadeOutFrames) : 1;
+  return Math.max(0, level * Math.max(0, Math.min(fadeIn, fadeOut)));
 }

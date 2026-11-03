@@ -17,12 +17,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CACHE_VERSION, DEFAULT_SILENCE_SCALE, loadConfig } from './config.mjs';
+import { CACHE_VERSION, DEFAULT_SILENCE_SCALE, EXPECTED_RUNTIME, loadConfig } from './config.mjs';
 import { MODELS, resolveVoice, voiceChain } from './catalog.mjs';
 import { EnginePool } from './engine-pool.mjs';
 import { canonicalJson, lineCacheKey, normalizeText, sha256 } from './hash.mjs';
 import { verifyModel, verifyRuntime } from './verify.mjs';
 import { readWavInfo } from './wav.mjs';
+import { computeEnvelope, ENVELOPE_RATE } from './envelope.mjs';
+import { loadLibrary, prepareAssets } from './library.mjs';
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -47,6 +49,11 @@ export function checkScript(script) {
     if (!normalizeText(l.text ?? '')) problems.push(`${where}: text empty`);
     if (l.speaker && l.speaker !== 'narrator' && !script.characters?.[l.speaker] && !l.voice)
       problems.push(`${where}: no voice assigned for speaker "${l.speaker}"`);
+  }
+  if (script?.music && !script.music.id) problems.push('music: id missing');
+  for (const [i, cue] of (script?.sfx ?? []).entries()) {
+    if (!cue.id) problems.push(`sfx ${i + 1}: id missing`);
+    if (!cue.scene) problems.push(`sfx ${i + 1}: scene missing`);
   }
   const allSpecs = [script?.narrator, ...Object.values(script?.characters ?? {}), ...(script?.lines ?? []).map((l) => l.voice && { voice: l.voice })]
     .filter(Boolean)
@@ -87,8 +94,18 @@ export async function generateVoice({ script, scriptFile = null, cfg = loadConfi
   const problems = checkScript(script);
   if (problems.length) throw new Error(`voice script invalid:\n- ${problems.join('\n- ')}`);
 
-  const runtime = cfg.fake ? { package: 'fake', version: 'test', dir: null, nativeFilesVerified: 0 } : verifyRuntime(cfg);
-  if (!cfg.fake) log(`[voice] runtime ${runtime.package} ${runtime.version} at ${runtime.dir} (${runtime.nativeFilesVerified} native files verified)`);
+  let runtime;
+  if (cfg.fake) runtime = { package: 'fake', version: 'test', dir: null, nativeFilesVerified: 0, available: true };
+  else {
+    try {
+      runtime = { ...verifyRuntime(cfg), available: true };
+      log(`[voice] runtime ${runtime.package} ${runtime.version} at ${runtime.dir} (${runtime.nativeFilesVerified} native files verified)`);
+    } catch (e) {
+      // Runtime unreachable (e.g. the E: drive is disconnected): cached lines still work; new lines will fail.
+      runtime = { package: EXPECTED_RUNTIME.package, version: EXPECTED_RUNTIME.version, dir: cfg.runtimeDir, nativeFilesVerified: 0, available: false };
+      log(`[voice] WARNING: runtime not available (${e.message.split('\n')[0]}). Using cached audio only; lines that need new audio will fail.`);
+    }
+  }
 
   const ownPool = !pool;
   pool = pool ?? new EnginePool({ log });
@@ -155,6 +172,7 @@ export async function generateVoice({ script, scriptFile = null, cfg = loadConfi
             }
           }
           if (!wav) {
+            if (!runtime.available) throw new Error(`no cached audio and the sherpa-onnx runtime is not available (${cfg.runtimeDir})`);
             const r = await pool.synth(voice.engineKey, initSpec(voice, info), {
               text: normalizeText(line.text),
               sid: voice.speakerId,
@@ -203,6 +221,8 @@ export async function generateVoice({ script, scriptFile = null, cfg = loadConfi
             fallbackUsed: attempts.length > 1,
             fallbackReason: attempts.length > 1 ? attempts[0].error : undefined,
             attempts,
+            envelopeRate: ENVELOPE_RATE,
+            envelope: computeEnvelope(cacheWav),
           };
           break;
         } catch (e) {
@@ -222,6 +242,10 @@ export async function generateVoice({ script, scriptFile = null, cfg = loadConfi
     if (ownPool) await pool.close();
   }
 
+  const library = loadLibrary(cfg.libraryFile ?? path.join(moduleRoot, 'src', 'audio-library.json'));
+  const { assets, problems: assetProblems, attributions: assetAttributions } = prepareAssets({ script, library, publicDir });
+  for (const p of assetProblems) log(`  REFUSED ${p}`);
+
   const ok = lines.filter((l) => !l.error);
   const manifest = {
     schemaVersion: 1,
@@ -231,9 +255,11 @@ export async function generateVoice({ script, scriptFile = null, cfg = loadConfi
     createdAt: new Date().toISOString(),
     test: Boolean(cfg.fake),
     runtime,
-    complete: ok.length === lines.length,
+    complete: ok.length === lines.length && assetProblems.length === 0,
     lines,
-    attributions: [...new Set(ok.filter((l) => l.requiresAttribution).map((l) => l.attribution))],
+    assets,
+    assetProblems,
+    attributions: [...new Set([...ok.filter((l) => l.requiresAttribution).map((l) => l.attribution), ...assetAttributions])],
     credits: [...new Set(ok.map((l) => l.attribution))],
     stats: {
       lines: lines.length,
