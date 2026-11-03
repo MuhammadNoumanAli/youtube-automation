@@ -1,14 +1,14 @@
 import React from 'react';
 import { random } from 'remotion';
 import { blendEye, EXPRESSIONS, Expression, eyePath } from './expressions';
+import type { FlagSpec } from '../engine/types';
+
+export type { FlagSpec };
 
 /**
  * Original, code-drawn Countryball rig.
- * Layers (bottom → top): shadow, flag clipped to the body, soft shading, outline, eyes.
+ * Layers (bottom → top): shadow, flag clipped to the body, soft shading, outline, eyes, optional name label.
  */
-export type FlagSpec =
-  | { layout: 'h-stripes'; colors: string[] }
-  | { layout: 'v-stripes'; colors: string[] };
 
 export interface CountryBallProps {
   id: string;
@@ -34,6 +34,11 @@ export interface CountryBallProps {
   lift: number;
   /** Seed so two characters never blink in sync. */
   blinkSeed: string;
+  /** 0..1, used by fade entries/exits. Default 1. */
+  opacity?: number;
+  /** Optional name shown in a small label above the ball. */
+  name?: string;
+  nameColor?: string;
 }
 
 const BLINK_FRAMES = 6;
@@ -55,8 +60,35 @@ export function blinkAmount(frame: number, fps: number, seed: string): number {
 }
 
 const Flag: React.FC<{ r: number; flag: FlagSpec }> = ({ r, flag }) => {
-  const n = flag.colors.length;
   const size = r * 2;
+  if (flag.layout === 'nordic-cross') {
+    // Cross offset towards the hoist, as on Nordic flags. Proportions are approximate.
+    const cx = -r * 0.28;
+    const w = r * 0.3;
+    const b = flag.border ? r * 0.12 : 0;
+    return (
+      <>
+        <rect x={-r} y={-r} width={size} height={size} fill={flag.field} />
+        {flag.border ? (
+          <>
+            <rect x={cx - w / 2 - b} y={-r} width={w + 2 * b} height={size} fill={flag.border} />
+            <rect x={-r} y={-w / 2 - b} width={size} height={w + 2 * b} fill={flag.border} />
+          </>
+        ) : null}
+        <rect x={cx - w / 2} y={-r} width={w} height={size} fill={flag.cross} />
+        <rect x={-r} y={-w / 2} width={size} height={w} fill={flag.cross} />
+      </>
+    );
+  }
+  if (flag.layout === 'disc') {
+    return (
+      <>
+        <rect x={-r} y={-r} width={size} height={size} fill={flag.field} />
+        <circle cx={0} cy={r * 0.08} r={r * 0.42} fill={flag.disc} />
+      </>
+    );
+  }
+  const n = flag.colors.length;
   if (flag.layout === 'h-stripes') {
     return (
       <>
@@ -93,7 +125,7 @@ export const CountryBall: React.FC<CountryBallProps> = (p) => {
   const shadeId = `ball-shade-${p.id}`;
 
   return (
-    <g>
+    <g opacity={p.opacity ?? 1}>
       {/* ground shadow: shrinks as the ball lifts */}
       <ellipse
         cx={p.x}
@@ -141,6 +173,32 @@ export const CountryBall: React.FC<CountryBallProps> = (p) => {
           />
         </g>
       </g>
+      {p.name ? (
+        <g transform={`translate(${p.x} ${p.y - p.lift - r - 46})`}>
+          <rect
+            x={-(p.name.length * 13 + 36) / 2}
+            y={-26}
+            width={p.name.length * 13 + 36}
+            height={44}
+            rx={22}
+            fill="#141414"
+            fillOpacity={0.78}
+            stroke={p.nameColor ?? '#ffffff'}
+            strokeWidth={3}
+          />
+          <text
+            x={0}
+            y={6}
+            textAnchor="middle"
+            fontFamily="'Segoe UI', Arial, Helvetica, sans-serif"
+            fontWeight={700}
+            fontSize={24}
+            fill="#ffffff"
+          >
+            {p.name}
+          </text>
+        </g>
+      ) : null}
     </g>
   );
 };
