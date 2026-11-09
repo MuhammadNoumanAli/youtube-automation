@@ -15,7 +15,7 @@
  *
  * Only type imports here, so this file stays pure and testable outside Remotion.
  */
-import type { Caption, TalkSegment, VideoConfig } from './types';
+import type { Caption, ExpressionKey, TalkSegment, VideoConfig } from './types';
 import type { LineAudio, VoiceManifest, VoiceScript } from './voice-types';
 
 export interface PlacedLine {
@@ -73,6 +73,7 @@ export function applyVoiceTiming(base: VideoConfig, script: VoiceScript, manifes
     let cursor = -1;
     const generated: Caption[] = [];
     const talk = new Map<string, TalkSegment[]>();
+    const faces = new Map<string, ExpressionKey[]>();
     for (const line of own) {
       const a = audio.get(line.id);
       const measured = a && !a.error && a.file && a.durationMs ? a : null;
@@ -93,6 +94,9 @@ export function applyVoiceTiming(base: VideoConfig, script: VoiceScript, manifes
         estimated: !measured,
       });
       generated.push({ from: start, to: start + frames, text: line.text, speaker: line.speaker === 'narrator' ? undefined : line.speaker });
+      if (line.expression && line.speaker !== 'narrator') {
+        faces.set(line.speaker, [...(faces.get(line.speaker) ?? []), { frame: start, value: line.expression }]);
+      }
       if (measured?.envelope?.length && measured.envelopeRate && line.speaker !== 'narrator') {
         const list = talk.get(line.speaker) ?? [];
         list.push({ from: start, to: start + frames, envelope: measured.envelope, rate: measured.envelopeRate });
@@ -104,7 +108,12 @@ export function applyVoiceTiming(base: VideoConfig, script: VoiceScript, manifes
       ...scene,
       durationInFrames: Math.max(scene.durationInFrames, needed),
       captions: [...scene.captions, ...generated].sort((x, y) => x.from - y.from),
-      characters: scene.characters.map((c) => (talk.has(c.ref) ? { ...c, talk: [...(c.talk ?? []), ...talk.get(c.ref)!] } : c)),
+      characters: scene.characters.map((c) => {
+        let out = c;
+        if (talk.has(c.ref)) out = { ...out, talk: [...(c.talk ?? []), ...talk.get(c.ref)!] };
+        if (faces.has(c.ref)) out = { ...out, expressions: [...c.expressions, ...faces.get(c.ref)!].sort((x, y) => x.frame - y.frame) };
+        return out;
+      }),
     };
   });
 

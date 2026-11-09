@@ -8,6 +8,8 @@
     ... render.ps1 -Concurrency 3
     ... render.ps1 -Composition NetherlandsVoiced -Out E:\YouTubeStudio\prototype\netherlands-voiced.mp4 `
                    -AudioDir D:\YouTubeStudio\audio\videos\NetherlandsVoiced      (run scripts\voice.ps1 first)
+    ... render.ps1 -Spec src\videos\specs\low-countries.spec.json -Format 9:16 -Out E:\...\low-countries-9x16.mp4 `
+                   -AudioDir D:\YouTubeStudio\audio\videos\LowCountries         (form-style spec; 16:9 or 9:16)
 
   Steps: git status + free space (read-only) -> npm cache and TEMP/TMP to E: for this session only ->
   install into apps\animation only if node_modules is missing (npm ci --workspaces=false) -> verify the root
@@ -23,8 +25,11 @@ param(
   [string]$Out = "E:\YouTubeStudio\prototype\netherlands-demo.mp4",
   [string]$Concurrency = "2",
   [string]$StudioRoot = "E:\YouTubeStudio",
-  [string]$AudioDir = ""
+  [string]$AudioDir = "",
+  [string]$Spec = "",
+  [string]$Format = ""
 )
+if ($Spec -and $Composition -eq 'NetherlandsDemo') { $Composition = 'FromSpec' }
 
 $ErrorActionPreference = 'Stop'
 $ModuleDir = Split-Path -Parent $PSScriptRoot
@@ -85,6 +90,8 @@ try {
   Section "RENDER $Composition"
   $renderArgs = @('scripts\render.mjs', '--composition', $Composition, '--out', $Out, '--cache', $RemotionCache, '--concurrency', $Concurrency, '--drives', 'C:\,D:\,E:\')
   if ($AudioDir) { $renderArgs += @('--audio-dir', $AudioDir) }
+  if ($Spec) { $renderArgs += @('--spec', $Spec) }
+  if ($Format) { $renderArgs += @('--format', $Format) }
   node @renderArgs
   $renderExit = $LASTEXITCODE
 } finally {

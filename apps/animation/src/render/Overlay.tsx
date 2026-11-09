@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, interpolate } from 'remotion';
+import { AbsoluteFill, interpolate, useVideoConfig } from 'remotion';
 import type { BackgroundElement, Caption, CharacterDefinition } from '../engine/types';
 
 const FONT = "'Segoe UI', 'Helvetica Neue', Arial, Helvetica, sans-serif";
@@ -11,8 +11,11 @@ export const Captions: React.FC<{ captions: Caption[]; frame: number; characters
   characters,
 }) => {
   const active = captions.filter((c) => frame >= c.from && frame < c.to);
+  const { width, height } = useVideoConfig();
+  const vertical = height > width;
   return (
-    <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 70, pointerEvents: 'none' }}>
+    // Vertical (9:16): narrower box and raised above the Shorts/Reels UI. 16:9 layout unchanged.
+    <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: vertical ? Math.round(height * 0.2) : 70, pointerEvents: 'none' }}>
       {active.map((c, i) => {
         const fadeIn = interpolate(frame, [c.from, c.from + 6], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
         const fadeOut = interpolate(frame, [c.to - 6, c.to], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -24,7 +27,7 @@ export const Captions: React.FC<{ captions: Caption[]; frame: number; characters
             style={{
               opacity: o,
               transform: `translateY(${(1 - fadeIn) * 14}px)`,
-              maxWidth: 1500,
+              maxWidth: Math.min(1500, width - 120),
               background: 'rgba(12, 14, 20, 0.78)',
               borderRadius: 20,
               padding: '18px 36px 22px',
@@ -58,7 +61,9 @@ export const Captions: React.FC<{ captions: Caption[]; frame: number; characters
 };
 
 /** Title cards ("title" background elements), drawn above the stage and outside the camera. */
-export const Titles: React.FC<{ elements: BackgroundElement[]; frame: number }> = ({ elements, frame }) => (
+export const Titles: React.FC<{ elements: BackgroundElement[]; frame: number }> = ({ elements, frame }) => {
+  const { width } = useVideoConfig();
+  return (
   <>
     {elements.map((el, i) => {
       if (el.type !== 'title' || frame < el.from || frame >= el.to) return null;
@@ -79,6 +84,7 @@ export const Titles: React.FC<{ elements: BackgroundElement[]; frame: number }> 
               fontFamily: FONT,
               color: '#ffffff',
               textShadow: '0 4px 0 #0b2a45, 0 10px 30px rgba(0,0,0,0.45)',
+              maxWidth: width - 120,
             }}
           >
             <div style={{ fontSize: 88, fontWeight: 900, letterSpacing: 1 }}>{el.text}</div>
@@ -88,4 +94,5 @@ export const Titles: React.FC<{ elements: BackgroundElement[]; frame: number }> 
       );
     })}
   </>
-);
+  );
+};

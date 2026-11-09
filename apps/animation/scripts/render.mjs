@@ -19,6 +19,10 @@
  * a two-pass loudnorm fine-tunes to -14 LUFS integrated with true peak <= -1.5 dBTP (YouTube's playback level). The
  * audio is trimmed to the exact video length; the video stream is copied untouched. The report checks the result.
  *
+ * Form-style videos (Phase 4): --spec <file.spec.json> renders the generic "FromSpec" composition from a video spec
+ * (src/engine/spec.ts); --format 9:16 or 16:9 overrides the spec's format, so one spec and one voice manifest give
+ * both versions.
+ *
  * Safety: writes only into --out's folder and --cache. Never deletes. If the output exists, the new file gets a
  * timestamp suffix. No Remotion licence key is passed, so no usage telemetry is sent (Remotion prints a warning).
  */
@@ -31,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { bundle } from '@remotion/bundler';
 import { ensureBrowser, renderMedia, selectComposition } from '@remotion/renderer';
 import { scriptHash } from '../voice/generate.mjs';
+import { voiceScriptFromSpec } from '../voice/spec.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const moduleRoot = path.resolve(here, '..');
@@ -41,7 +46,13 @@ const args = Object.fromEntries(
     return acc;
   }, []),
 );
-const compositionId = args.composition ?? 'NetherlandsDemo';
+const specFile = args.spec ? path.resolve(args.spec) : null;
+const compositionId = args.composition ?? (specFile ? 'FromSpec' : 'NetherlandsDemo');
+const formatOverride = args.format === '9:16' || args.format === '16:9' ? args.format : null;
+if (args.format && !formatOverride) {
+  console.error('[render] --format must be 9:16 or 16:9');
+  process.exit(1);
+}
 const requestedOut = path.resolve(args.out ?? path.join(moduleRoot, 'out', `${compositionId}.mp4`));
 const cacheDir = path.resolve(args.cache ?? path.join(moduleRoot, '.cache'));
 const concurrency = Math.max(1, parseInt(args.concurrency ?? '2', 10) || 2);
@@ -147,6 +158,17 @@ const report = {
 // ---- voice manifest (voiced compositions only); checked before anything is bundled or rendered
 let inputProps = {};
 let publicDir = null;
+let spec = null;
+if (specFile) {
+  if (!fs.existsSync(specFile)) {
+    console.error(`[render] REFUSED: spec not found: ${specFile}`);
+    process.exit(1);
+  }
+  spec = JSON.parse(fs.readFileSync(specFile, 'utf8'));
+  if (formatOverride) spec = { ...spec, format: formatOverride };
+  inputProps = { spec, manifest: null };
+  console.log(`[render] spec: ${specFile} (${spec.id}, ${spec.format})`);
+}
 if (audioDir) {
   const refuse = (msg) => {
     console.error(`[render] REFUSED: ${msg}`);
@@ -156,17 +178,21 @@ if (audioDir) {
   if (!fs.existsSync(manifestFile)) refuse(`no voice manifest at ${manifestFile}. Run scripts\\voice.ps1 first.`);
   const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
   if (!manifest.complete) refuse(`voice manifest is incomplete (${manifest.stats?.failed ?? '?'} line(s) failed). See ${manifestFile}.`);
-  if (manifest.scriptFile) {
-    const scriptPath = path.join(moduleRoot, manifest.scriptFile);
+  if (spec) {
+    if (manifest.videoId !== spec.id) refuse(`manifest is for video "${manifest.videoId}", spec is "${spec.id}".`);
+    if (scriptHash(voiceScriptFromSpec(spec)) !== manifest.scriptHash)
+      refuse(`the spec's dialogue or voices changed after the audio was generated. Run scripts\\voice.ps1 -Spec again.`);
+  } else if (manifest.source?.kind === 'voice-script' || manifest.scriptFile) {
+    const scriptPath = manifest.source?.file ?? path.join(moduleRoot, manifest.scriptFile);
     if (!fs.existsSync(scriptPath)) refuse(`voice script ${scriptPath} not found.`);
     if (scriptHash(JSON.parse(fs.readFileSync(scriptPath, 'utf8'))) !== manifest.scriptHash)
-      refuse(`${manifest.scriptFile} changed after the audio was generated. Run scripts\\voice.ps1 again.`);
+      refuse(`${scriptPath} changed after the audio was generated. Run scripts\\voice.ps1 again.`);
   }
   publicDir = path.join(audioDir, 'public');
   const missing = manifest.lines.filter((l) => !l.file || !fs.existsSync(path.join(publicDir, l.file)));
   if (missing.length) refuse(`audio missing for: ${missing.map((l) => l.id).join(', ')}`);
   if (manifest.test) console.warn('[render] WARNING: this manifest uses FAKE test tones, not real voices.');
-  inputProps = { manifest };
+  inputProps = spec ? { spec, manifest } : { manifest };
   report.voice = {
     manifest: manifestFile,
     lines: manifest.lines.length,
@@ -204,7 +230,7 @@ const serveUrl = await bundle({
 report.bundleSeconds = (Date.now() - tb) / 1000;
 console.log(`[render] bundled in ${report.bundleSeconds.toFixed(1)} s`);
 
-const composition = await selectComposition({ serveUrl, id: compositionId, inputProps, logLevel: 'warn', browserExecutable });
+const composition = await selectComposition({ serveUrl, id: compositionId, inputProps, logLevel: 'warn', browserExecutable, timeoutInMilliseconds: 120_000 });
 const expectedSeconds = composition.durationInFrames / composition.fps;
 report.compositionInfo = {
   width: composition.width,
@@ -217,28 +243,45 @@ report.compositionInfo = {
 const stop = memorySampler();
 const t0 = Date.now();
 let last = -10;
-await renderMedia({
-  composition,
-  serveUrl,
-  inputProps,
-  codec: 'h264',
-  crf: 18,
-  x264Preset: 'veryfast',
-  pixelFormat: 'yuv420p',
-  colorSpace: 'bt709',
-  outputLocation: renderTarget,
-  concurrency,
-  overwrite: false,
-  browserExecutable,
-  logLevel: 'warn',
-  onProgress: ({ progress }) => {
-    const pct = Math.floor(progress * 100);
-    if (pct >= last + 10) {
-      last = pct;
-      console.log(`  ${pct}%`);
-    }
-  },
-});
+// Chrome can crash on a busy laptop ("Target closed"), and the page reload then needs more than Remotion's default
+// 30 s. Allow 2 min per page load and retry the whole render once after a browser crash. The output is a fresh path
+// chosen by this run, so overwriting a half-written attempt is safe.
+const RENDER_TIMEOUT_MS = 120_000;
+const isBrowserCrash = (e) => /Target closed|Session closed|browser crashed|Timeout \(\d+ms\) exceeded|Page crashed/i.test(String(e?.message ?? e));
+report.renderAttempts = 0;
+for (let attempt = 1; ; attempt++) {
+  report.renderAttempts = attempt;
+  try {
+    await renderMedia({
+      composition,
+      serveUrl,
+      inputProps,
+      codec: 'h264',
+      crf: 18,
+      x264Preset: 'veryfast',
+      pixelFormat: 'yuv420p',
+      colorSpace: 'bt709',
+      outputLocation: renderTarget,
+      concurrency,
+      overwrite: attempt > 1,
+      browserExecutable,
+      timeoutInMilliseconds: RENDER_TIMEOUT_MS,
+      logLevel: 'warn',
+      onProgress: ({ progress }) => {
+        const pct = Math.floor(progress * 100);
+        if (pct >= last + 10) {
+          last = pct;
+          console.log(`  ${pct}%`);
+        }
+      },
+    });
+    break;
+  } catch (e) {
+    if (attempt >= 2 || !isBrowserCrash(e)) throw e;
+    console.warn(`[render] browser crashed (${String(e?.message ?? e).split('\n')[0]}). Retrying the render once...`);
+    last = -10;
+  }
+}
 const renderSeconds = (Date.now() - t0) / 1000;
 report.render = {
   concurrency,
@@ -319,7 +362,7 @@ if (pr.status === 0) {
   const checks = {
     h264: v.codec_name === 'h264',
     yuv420p: v.pix_fmt === 'yuv420p',
-    size1920x1080: v.width === composition.width && v.height === composition.height,
+    frameSize: v.width === composition.width && v.height === composition.height,
     fps: v.r_frame_rate === `${composition.fps}/1`,
     duration: Math.abs(dur - expectedSeconds) <= 0.1,
     frameCount: v.nb_frames === undefined ? null : parseInt(v.nb_frames, 10) === composition.durationInFrames,
@@ -377,7 +420,7 @@ const md = [
   `- Temp dir: ${report.tmpdir}`,
   `- Composition: ${composition.width}x${composition.height}, ${composition.fps} fps, ${composition.durationInFrames} frames (${expectedSeconds.toFixed(1)} s)`,
   `- Bundle: ${report.bundleSeconds.toFixed(1)} s`,
-  `- Render: ${fmt(renderSeconds)} at concurrency ${concurrency}: ${report.render.framesPerSecond} fps, ${report.render.realtimeFactor}x realtime`,
+  `- Render: ${fmt(renderSeconds)} at concurrency ${concurrency}: ${report.render.framesPerSecond} fps, ${report.render.realtimeFactor}x realtime${report.renderAttempts > 1 ? ` (after a browser crash, attempt ${report.renderAttempts})` : ''}`,
   `- Peak added RAM: ${report.render.memory.renderAddedPeakMB} MB (node process peak ${report.render.memory.nodeProcessPeakRssMB} MB)`,
   `- Estimates: 60 s ${report.estimates['60s']}, 5 min ${report.estimates['5min']}, 10 min ${report.estimates['10min']}`,
   '',

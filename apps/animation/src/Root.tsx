@@ -8,6 +8,9 @@ import { applyVoiceTiming } from './engine/dialogue';
 import type { VoiceManifest } from './engine/voice-types';
 import { VoicedVideoRenderer } from './render/VoicedVideoRenderer';
 import { netherlandsVoicedBase, netherlandsVoiceScript } from './videos/netherlands-voiced';
+import { buildFromSpec } from './engine/spec-build';
+import type { VideoSpec } from './engine/spec';
+import exampleSpec from './videos/specs/low-countries.spec.json';
 
 const problems = validateVideo(netherlandsDemo);
 if (problems.length) {
@@ -30,6 +33,22 @@ const NetherlandsVoiced: React.FC<VoicedProps> = ({ manifest }) => {
   return <VoicedVideoRenderer video={t.video} lines={t.lines} manifest={manifest} />;
 };
 
+// ---- Generic composition (Phase 4): renders any video spec passed as input props (render.mjs --spec).
+type SpecProps = { spec: VideoSpec; manifest: VoiceManifest | null };
+const specTiming = ({ spec, manifest }: SpecProps) => {
+  const built = buildFromSpec(spec);
+  if (built.problems.length) throw new Error(`Video spec "${spec?.id}" is invalid:\n- ${built.problems.join('\n- ')}`);
+  const t = applyVoiceTiming(built.video, built.script, manifest);
+  const structural = [...t.problems.filter((p) => !manifest || !p.includes('no audio')), ...validateVideo(t.video)];
+  if (manifest && t.problems.length) throw new Error(`Video spec "${spec.id}" does not match its voice manifest:\n- ${t.problems.join('\n- ')}`);
+  if (structural.length) throw new Error(`Video spec "${spec.id}" produced an invalid video:\n- ${structural.join('\n- ')}`);
+  return t;
+};
+const FromSpec: React.FC<SpecProps> = (props) => {
+  const t = specTiming(props);
+  return <VoicedVideoRenderer video={t.video} lines={t.lines} manifest={props.manifest} />;
+};
+
 export const RemotionRoot: React.FC = () => (
   <>
     <Composition id="Spike" component={Spike} durationInFrames={300} fps={30} width={1920} height={1080} />
@@ -50,6 +69,19 @@ export const RemotionRoot: React.FC = () => (
       fps={netherlandsVoicedBase.fps}
       width={netherlandsVoicedBase.width}
       height={netherlandsVoicedBase.height}
+    />
+    <Composition
+      id="FromSpec"
+      component={FromSpec}
+      defaultProps={{ spec: exampleSpec as unknown as VideoSpec, manifest: null } as SpecProps}
+      calculateMetadata={({ props }) => {
+        const t = specTiming(props);
+        return { durationInFrames: totalDuration(t.video), width: t.video.width, height: t.video.height, fps: t.video.fps };
+      }}
+      durationInFrames={300}
+      fps={30}
+      width={1920}
+      height={1080}
     />
   </>
 );

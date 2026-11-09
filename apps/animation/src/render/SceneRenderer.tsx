@@ -31,14 +31,16 @@ export const SceneRenderer: React.FC<{
     const projection = makeProjection(camera, width, height);
     project = (p) => projection(p);
     const highlights: Record<string, number> = {};
+    const colors: Record<string, string> = {};
     let color = '#f39c34';
     for (const h of scene.background.highlights ?? []) {
       const a = interpolate(frame, [h.from, h.from + h.fadeIn], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
       const pulse = h.pulse && a > 0 ? 0.85 + 0.15 * Math.sin((frame / fps) * Math.PI * 2) : 1;
       highlights[h.countryId] = a * pulse;
       color = h.color;
+      colors[h.countryId] = h.color;
     }
-    background = <WorldMap uid={uid} camera={camera} width={width} height={height} highlights={highlights} highlightColor={color} />;
+    background = <WorldMap uid={uid} camera={camera} width={width} height={height} highlights={highlights} highlightColor={color} highlightColors={colors} />;
   } else {
     background = <Landscape uid={uid} bg={scene.background} width={width} height={height} />;
   }

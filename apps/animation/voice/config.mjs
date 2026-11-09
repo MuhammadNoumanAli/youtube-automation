@@ -2,21 +2,29 @@
  * Voice generation settings. Every path can be overridden with an environment variable; the defaults are the
  * locations verified in Stage 0 (3 Nov 2026). Nothing here downloads or installs anything.
  *
- *   TTS_RUNTIME_DIR   existing sherpa-onnx runtime folder (contains node_modules/sherpa-onnx-node + -win-x64)
+ *   TTS_RUNTIME_DIR   existing sherpa-onnx runtime folder (default: D:\\YouTubeStudio\\runtime\\sherpa-onnx if copied there,
+ *                     else E:\\YouTubeStudio\\runtime\\sherpa-onnx)
  *   TTS_KOKORO_DIR    Kokoro v1.0 model folder (primary: internal SSD)
  *   TTS_PIPER_DIR     folder holding en_US-ljspeech-high/ and en_US-libritts-high/
  *   TTS_AUDIO_ROOT    where generated audio, the cache and manifests are written
  *   TTS_THREADS       onnxruntime threads per engine (default 2)
  *   TTS_RUNTIME_VERIFY=0  skip the runtime file checksum check (not recommended)
  */
+import fs from 'node:fs';
 import path from 'node:path';
 
 const env = process.env;
 const win = process.platform === 'win32';
 
+function defaultRuntimeDir() {
+  const internal = 'D:\\YouTubeStudio\\runtime\\sherpa-onnx';
+  return fs.existsSync(path.join(internal, 'node_modules', 'sherpa-onnx-node', 'package.json')) ? internal : 'E:\\YouTubeStudio\\runtime\\sherpa-onnx';
+}
+
 export function loadConfig(overrides = {}) {
   const base = {
-    runtimeDir: env.TTS_RUNTIME_DIR || (win ? 'E:\\YouTubeStudio\\runtime\\sherpa-onnx' : '/opt/sherpa-onnx'),
+    // Prefer the verified copy on the internal drive (scripts/copy-runtime-to-d.ps1), else the original on E:.
+    runtimeDir: env.TTS_RUNTIME_DIR || (win ? defaultRuntimeDir() : '/opt/sherpa-onnx'),
     kokoroDir: env.TTS_KOKORO_DIR || (win ? 'D:\\YouTubeStudio\\models\\tts\\kokoro-multi-lang-v1_0' : '/opt/models/kokoro-multi-lang-v1_0'),
     piperDir: env.TTS_PIPER_DIR || (win ? 'D:\\YouTubeStudio\\models\\tts\\piper' : '/opt/models/piper'),
     audioRoot: env.TTS_AUDIO_ROOT || (win ? 'D:\\YouTubeStudio\\audio' : path.resolve('audio')),

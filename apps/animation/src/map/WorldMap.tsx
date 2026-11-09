@@ -56,6 +56,8 @@ export interface WorldMapProps {
   /** ISO 3166-1 numeric id → highlight strength 0..1. */
   highlights: Record<string, number>;
   highlightColor: string;
+  /** Optional per-country colours (id -> colour); falls back to highlightColor. */
+  highlightColors?: Record<string, string>;
   /** Prefix for SVG ids, so two maps can be on screen at once (scene transitions). */
   uid?: string;
 }
@@ -65,7 +67,7 @@ const BORDER = '#8c7b5e';
 const OCEAN_TOP = '#8ec3e6';
 const OCEAN_BOTTOM = '#5f9fcc';
 
-export const WorldMap: React.FC<WorldMapProps> = ({ camera, width, height, highlights, highlightColor, uid = 'map' }) => {
+export const WorldMap: React.FC<WorldMapProps> = ({ camera, width, height, highlights, highlightColor, highlightColors, uid = 'map' }) => {
   const projection = makeProjection(camera, width, height);
   const path = geoPath(projection);
   const borderWidth = Math.min(2.2, Math.max(0.6, camera.scale / 900));
@@ -110,7 +112,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ camera, width, height, highl
           <path
             key={`hl-${id}`}
             d={d}
-            fill={highlightColor}
+            fill={highlightColors?.[id] ?? highlightColor}
             fillOpacity={0.75 * strength}
             stroke="#3b2b12"
             strokeWidth={borderWidth * (1 + strength)}

@@ -141,6 +141,35 @@ required** in the video description (the manifest and render report print the ex
 `en_US-ljspeech-high`: public domain. The Lessac voices are research-only and are not in the catalogue. The sherpa
 1.13.8 runtime contains espeak-ng (GPL-3.0): fine as a local tool; never distribute this module or its runtime.
 
+## Video specs (Phase 4a): one form-style file, both formats
+
+A *video spec* (`src/videos/specs/*.spec.json`, types in `src/engine/spec.ts`) is what the dashboard form will
+produce: title, format, cast (character ids + optional voices), narrator, and a list of scenes, each built from a
+template with its dialogue lines.
+
+| Template | What it shows | Fields |
+| --- | --- | --- |
+| `title-card` | Sky, title and subtitle | `title`, `subtitle?` |
+| `map-intro` | Camera zooms from a wide map onto one country, which lights up; its ball drops in | `country`, `title?` |
+| `map-focus` | 2-4 countries on one map, each in its own colour, balls spaced so none overlap | `countries` |
+| `dialogue` | 1-3 characters on a landscape stage (`countryside`, `plain` or `coast`) | `cast`, `setting?` |
+
+Each line: `{ "id", "speaker": "narrator" | cast id, "text" (max 90 chars), "expression"? }`. The expression is
+applied at the line's measured start. Format, templates and expressions are not part of the audio cache key, so one
+manifest serves the 16:9 and 9:16 versions; editing a line's text or a voice requires running voice.ps1 again (the
+render refuses otherwise).
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\voice.ps1 -Spec src\videos\specs\low-countries.spec.json
+powershell -ExecutionPolicy Bypass -File scripts\render.ps1 -Spec src\videos\specs\low-countries.spec.json -Format 16:9 `
+  -Out E:\YouTubeStudio\prototype\low-countries-16x9.mp4 -AudioDir D:\YouTubeStudio\audio\videos\LowCountries
+powershell -ExecutionPolicy Bypass -File scripts\render.ps1 -Spec src\videos\specs\low-countries.spec.json -Format 9:16 `
+  -Out E:\YouTubeStudio\prototype\low-countries-9x16.mp4 -AudioDir D:\YouTubeStudio\audio\videos\LowCountries
+```
+
+Map data for new characters goes in `src/engine/countries.ts`. The runtime can be copied to the internal drive with
+`scripts\copy-runtime-to-d.ps1` (checksum-verified; the voice step then prefers D: automatically).
+
 ## Known caveat
 
 The root `package.json` declares `"workspaces": ["apps/*"]`, which matches this folder. A plain `npm install` in the

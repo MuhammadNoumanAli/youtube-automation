@@ -4,9 +4,10 @@
     powershell -ExecutionPolicy Bypass -File D:\wamp64\www\youtube-automation\apps\animation\scripts\voice.ps1 -Smoke
     ... voice.ps1                                  (NetherlandsVoiced, from src\videos\netherlands-voiced.voice.json)
     ... voice.ps1 -Video NetherlandsVoiced -Force  (regenerate every line, ignoring the cache)
+    ... voice.ps1 -Spec src\videos\specs\low-countries.spec.json   (a form-style video spec)
 
   Uses the EXISTING sherpa-onnx runtime and local models; installs and downloads nothing:
-    runtime  E:\YouTubeStudio\runtime\sherpa-onnx           (version + native file checksums verified on start)
+    runtime  D:\YouTubeStudio\runtime\sherpa-onnx if copied (copy-runtime-to-d.ps1), else E:\... (checksums verified)
     Kokoro   D:\YouTubeStudio\models\tts\kokoro-multi-lang-v1_0
     Piper    D:\YouTubeStudio\models\tts\piper\              (copied by scripts\copy-piper-to-d.ps1)
   Writes only under -AudioRoot (default D:\YouTubeStudio\audio): cache, per-video public\lines and voice-manifest.json,
@@ -14,10 +15,11 @@
 #>
 param(
   [string]$Video = 'NetherlandsVoiced',
+  [string]$Spec = '',
   [switch]$Smoke,
   [switch]$Force,
   [string]$AudioRoot = 'D:\YouTubeStudio\audio',
-  [string]$RuntimeDir = 'E:\YouTubeStudio\runtime\sherpa-onnx',
+  [string]$RuntimeDir = '',
   [string]$KokoroDir = 'D:\YouTubeStudio\models\tts\kokoro-multi-lang-v1_0',
   [string]$PiperDir = 'D:\YouTubeStudio\models\tts\piper',
   [int]$Threads = 2
@@ -29,7 +31,7 @@ function Stop-Run($msg) { Write-Host "STOPPED: $msg" -ForegroundColor Red; try {
 
 New-Item -ItemType Directory -Force -Path (Join-Path $AudioRoot 'logs') | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$label = if ($Smoke) { 'smoke' } else { $Video }
+$label = if ($Smoke) { 'smoke' } elseif ($Spec) { [IO.Path]::GetFileNameWithoutExtension($Spec) } else { $Video }
 Start-Transcript -Path (Join-Path $AudioRoot "logs\voice-$label-$stamp.log") | Out-Null
 
 Write-Host "===== CHECKS =====" -ForegroundColor Cyan
@@ -39,6 +41,11 @@ if ([int]($nodeVersion.TrimStart('v').Split('.')[0]) -lt 22) { Stop-Run "Node 22
 Write-Host "Node $nodeVersion"
 $audioDrive = Get-PSDrive -Name $AudioRoot.Substring(0, 1) -ErrorAction SilentlyContinue
 if ($audioDrive -and ($audioDrive.Free / 1GB) -lt 1) { Stop-Run "Less than 1 GB free on $($AudioRoot.Substring(0, 2))." }
+if (-not $RuntimeDir) {
+  # Prefer the verified internal copy (scripts\copy-runtime-to-d.ps1), else the original on E:.
+  $RuntimeDir = if (Test-Path -LiteralPath 'D:\YouTubeStudio\runtime\sherpa-onnx\node_modules\sherpa-onnx-node\package.json') { 'D:\YouTubeStudio\runtime\sherpa-onnx' } else { 'E:\YouTubeStudio\runtime\sherpa-onnx' }
+}
+Write-Host "Runtime: $RuntimeDir"
 if (-not (Test-Path -LiteralPath $KokoroDir)) { Stop-Run "Not found: $KokoroDir" }
 if (-not (Test-Path -LiteralPath $RuntimeDir)) {
   Write-Host "WARNING: runtime not found at $RuntimeDir (is the E: drive connected?). Only cached lines can be used." -ForegroundColor Yellow
@@ -60,7 +67,7 @@ Write-Host "===== VOICE =====" -ForegroundColor Cyan
 Push-Location $ModuleDir
 try {
   $nodeArgs = @('voice\generate.mjs')
-  if ($Smoke) { $nodeArgs += '--smoke' } else { $nodeArgs += @('--video', $Video) }
+  if ($Smoke) { $nodeArgs += '--smoke' } elseif ($Spec) { $nodeArgs += @('--spec', $Spec) } else { $nodeArgs += @('--video', $Video) }
   if ($Force) { $nodeArgs += '--force' }
   node @nodeArgs
   $exitCode = $LASTEXITCODE
@@ -69,7 +76,11 @@ try {
 }
 Write-Host ""
 if ($exitCode -eq 0) { Write-Host "DONE (exit 0)" -ForegroundColor Green } else { Write-Host "FINISHED WITH PROBLEMS (exit $exitCode)" -ForegroundColor Yellow }
-if (-not $Smoke -and $exitCode -eq 0) {
+if ($Spec -and $exitCode -eq 0) {
+  $specId = (Get-Content -LiteralPath $Spec -Raw | ConvertFrom-Json).id
+  Write-Host "Next: render (16:9 and/or 9:16) with"
+  Write-Host "  powershell -ExecutionPolicy Bypass -File $ModuleDir\scripts\render.ps1 -Spec $Spec -Format 16:9 -Out E:\YouTubeStudio\prototype\$($specId.ToLower())-16x9.mp4 -AudioDir $AudioRoot\videos\$specId"
+} elseif (-not $Smoke -and $exitCode -eq 0) {
   Write-Host "Next: render with"
   Write-Host "  powershell -ExecutionPolicy Bypass -File $ModuleDir\scripts\render.ps1 -Composition $Video -Out E:\YouTubeStudio\prototype\$($Video.ToLower()).mp4 -AudioDir $AudioRoot\videos\$Video"
 }

@@ -5,6 +5,7 @@
  *
  *   node voice/generate.mjs --video NetherlandsVoiced          (finds src/videos/*.voice.json with that videoId)
  *   node voice/generate.mjs --script src/videos/netherlands-voiced.voice.json [--force]
+ *   node voice/generate.mjs --spec path\to\video.spec.json   (a form-style video spec; see src/engine/spec.ts)
  *   node voice/generate.mjs --smoke [--force]                  (engine check: Kokoro, both Piper voices, fallback, cache)
  *   add --fake to use test tones instead of real engines (no models needed; for tests only)
  *
@@ -25,6 +26,7 @@ import { verifyModel, verifyRuntime } from './verify.mjs';
 import { readWavInfo } from './wav.mjs';
 import { computeEnvelope, ENVELOPE_RATE } from './envelope.mjs';
 import { loadLibrary, prepareAssets } from './library.mjs';
+import { voiceScriptFromSpec } from './spec.mjs';
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -90,7 +92,7 @@ function assignmentFor(script, line) {
  * Generates (or reuses from cache) every line of a voice script and writes the manifest.
  * Returns the manifest. Lines that failed on every voice are listed with `error` and the manifest has complete=false.
  */
-export async function generateVoice({ script, scriptFile = null, cfg = loadConfig(), force = false, log = console.log, pool = null }) {
+export async function generateVoice({ script, scriptFile = null, source = null, cfg = loadConfig(), force = false, log = console.log, pool = null }) {
   const problems = checkScript(script);
   if (problems.length) throw new Error(`voice script invalid:\n- ${problems.join('\n- ')}`);
 
@@ -251,6 +253,8 @@ export async function generateVoice({ script, scriptFile = null, cfg = loadConfi
     schemaVersion: 1,
     videoId: script.videoId,
     scriptFile: scriptFile ? path.relative(moduleRoot, scriptFile).split(path.sep).join('/') : null,
+    /** Where the lines came from, so render.mjs can refuse stale audio: { kind: 'voice-script' | 'spec', file }. */
+    source: source ?? (scriptFile ? { kind: 'voice-script', file: path.resolve(scriptFile) } : null),
     scriptHash: scriptHash(script),
     createdAt: new Date().toISOString(),
     test: Boolean(cfg.fake),
@@ -355,10 +359,18 @@ async function main() {
     const ok = await smoke({ cfg, force: Boolean(args.force), log: console.log });
     process.exit(ok ? 0 : 2);
   }
-  const scriptFile = path.resolve(args.script ?? findScript(args.video ?? 'NetherlandsVoiced'));
-  const script = JSON.parse(fs.readFileSync(scriptFile, 'utf8'));
-  console.log(`[voice] script: ${scriptFile} (${script.lines.length} lines)`);
-  const m = await generateVoice({ script, scriptFile, cfg, force: Boolean(args.force), log: console.log });
+  let m;
+  if (args.spec) {
+    const specFile = path.resolve(args.spec);
+    const script = voiceScriptFromSpec(JSON.parse(fs.readFileSync(specFile, 'utf8')));
+    console.log(`[voice] spec: ${specFile} (${script.lines.length} lines, video ${script.videoId})`);
+    m = await generateVoice({ script, source: { kind: 'spec', file: specFile }, cfg, force: Boolean(args.force), log: console.log });
+  } else {
+    const scriptFile = path.resolve(args.script ?? findScript(args.video ?? 'NetherlandsVoiced'));
+    const script = JSON.parse(fs.readFileSync(scriptFile, 'utf8'));
+    console.log(`[voice] script: ${scriptFile} (${script.lines.length} lines)`);
+    m = await generateVoice({ script, scriptFile, cfg, force: Boolean(args.force), log: console.log });
+  }
   const file = path.join(cfg.audioRoot, 'videos', m.videoId, 'voice-manifest.json');
   console.log(
     `\n[voice] ${m.complete ? 'COMPLETE' : 'INCOMPLETE'}: ${m.stats.lines} lines, ${m.stats.generated} generated, ${m.stats.cached} cached, ${m.stats.fallbacks} fallback, ${m.stats.failed} failed; ${m.stats.totalAudioSeconds} s of audio in ${m.stats.wallSeconds} s`,

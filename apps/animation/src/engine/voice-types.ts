@@ -5,6 +5,7 @@
  * reads both through applyVoiceTiming() in dialogue.ts. Neither depends on width/height, so one script and one set
  * of audio files serve both 16:9 and 9:16 versions of a video.
  */
+import type { Expression } from '../character/expressions';
 
 export type VoiceSpec =
   | { engine: 'kokoro'; voice: string; speed?: number }
@@ -30,6 +31,8 @@ export interface DialogueLine {
   at?: number;
   /** Per-line voice override. */
   voice?: VoiceSpec;
+  /** Expression the speaking character switches to when this line starts (placed at the real, measured start). */
+  expression?: Expression;
 }
 
 export interface VoiceScript {

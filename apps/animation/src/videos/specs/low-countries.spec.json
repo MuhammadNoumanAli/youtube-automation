@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "LowCountries",
+  "title": "The Low Countries",
+  "format": "16:9",
+  "narrator": { "voice": { "engine": "kokoro", "voice": "am_michael" } },
+  "cast": [
+    { "id": "netherlands", "voice": { "engine": "kokoro", "voice": "af_heart", "speed": 1.05 } },
+    { "id": "belgium", "voice": { "engine": "kokoro", "voice": "am_puck" } },
+    { "id": "germany", "voice": { "engine": "kokoro", "voice": "am_adam" } }
+  ],
+  "scenes": [
+    {
+      "template": "title-card",
+      "id": "title",
+      "title": "The Low Countries",
+      "subtitle": "A Countryballs short",
+      "lines": [{ "id": "title-1", "speaker": "narrator", "text": "Three neighbours, one coastline, and a lot of opinions." }]
+    },
+    {
+      "template": "map-intro",
+      "id": "intro",
+      "country": "netherlands",
+      "title": "The Netherlands",
+      "lines": [
+        { "id": "intro-1", "speaker": "narrator", "text": "This is the Netherlands, right on the North Sea." },
+        { "id": "intro-2", "speaker": "netherlands", "text": "Hallo! About a quarter of my land lies below sea level.", "expression": "happy" }
+      ]
+    },
+    {
+      "template": "map-focus",
+      "id": "neighbours",
+      "countries": ["netherlands", "belgium", "germany"],
+      "lines": [
+        { "id": "neighbours-1", "speaker": "narrator", "text": "To the south is Belgium. To the east, Germany." },
+        { "id": "neighbours-2", "speaker": "belgium", "text": "Hello, neighbours!", "expression": "happy" },
+        { "id": "neighbours-3", "speaker": "germany", "text": "Guten Tag. Everyone on time today?", "expression": "determined" }
+      ]
+    },
+    {
+      "template": "dialogue",
+      "id": "chat",
+      "cast": ["netherlands", "belgium"],
+      "setting": "countryside",
+      "lines": [
+        { "id": "chat-1", "speaker": "belgium", "text": "You know the best fries come from me, right?", "expression": "determined" },
+        { "id": "chat-2", "speaker": "netherlands", "text": "Hmm. We can agree to share the mayonnaise.", "expression": "surprised" },
+        { "id": "chat-3", "speaker": "belgium", "text": "Deal!", "expression": "happy" }
+      ]
+    },
+    {
+      "template": "dialogue",
+      "id": "coast",
+      "cast": ["netherlands", "germany"],
+      "setting": "coast",
+      "lines": [
+        { "id": "coast-1", "speaker": "germany", "text": "Your dikes are impressive. Very efficient.", "expression": "happy" },
+        { "id": "coast-2", "speaker": "netherlands", "text": "Thank you! The sea does not get a vote here.", "expression": "determined" }
+      ]
+    }
+  ]
+}
