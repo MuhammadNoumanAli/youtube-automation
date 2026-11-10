@@ -172,4 +172,40 @@ describe('JobsService', () => {
       expect(cancelled.last_error).toBe('User stopped');
     });
   });
+
+  describe('extendLease', () => {
+    const qb = (affected: number) => {
+      const b: any = {};
+      b.update = jest.fn(() => b);
+      b.set = jest.fn(() => b);
+      b.where = jest.fn(() => b);
+      b.execute = jest.fn(async () => ({ affected }));
+      return b;
+    };
+
+    it('renews the lease while this worker still holds the job', async () => {
+      const b = qb(1);
+      mockJobRepo.createQueryBuilder.mockReturnValue(b);
+      await expect(service.extendLease('job-1', 900)).resolves.toBe(true);
+      expect(b.where).toHaveBeenCalledWith(
+        expect.stringContaining('locked_by = :worker'),
+        expect.objectContaining({ id: 'job-1', processing: JobStatus.Processing, worker: service.getWorkerId() }),
+      );
+    });
+
+    it('returns false when the job was cancelled or taken over', async () => {
+      mockJobRepo.createQueryBuilder.mockReturnValue(qb(0));
+      await expect(service.extendLease('job-1')).resolves.toBe(false);
+    });
+  });
+
+  describe('failJob on a cancelled job', () => {
+    it('keeps it cancelled and schedules no retry', async () => {
+      const job: Partial<BackgroundJob> = { id: 'job-1', status: JobStatus.Cancelled, attempt_count: 1, max_attempts: 3 };
+      mockJobRepo.findOne.mockResolvedValue(job);
+      const result = await service.failJob('job-1', 'killed');
+      expect(result.status).toBe(JobStatus.Cancelled);
+      expect(mockJobRepo.save).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -1,4 +1,24 @@
+import { EventEmitter } from 'events';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Test, TestingModule } from '@nestjs/testing';
+
+// FFmpeg is replaced by a stub that writes the output file (last argument) and exits 0.
+jest.mock('child_process', () => ({
+  spawn: jest.fn((_cmd: string, args: string[]) => {
+    const proc: any = new EventEmitter();
+    proc.stderr = new EventEmitter();
+    proc.stdout = new EventEmitter();
+    proc.kill = jest.fn();
+    setImmediate(() => {
+      const out = args[args.length - 1];
+      require('fs').mkdirSync(require('path').dirname(out), { recursive: true });
+      require('fs').writeFileSync(out, 'stub');
+      proc.emit('close', 0);
+    });
+    return proc;
+  }),
+}));
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { MagicVideoService } from './magic-video.service';
@@ -6,7 +26,7 @@ import { VideoProject, VideoFormat, VideoProjectStatus } from '../../database/en
 import { ChannelProfile } from '../../database/entities/channel-profile.entity';
 import { Script, ScriptStatus } from '../../database/entities/script.entity';
 import { Narration } from '../../database/entities/narration.entity';
-import { Asset } from '../../database/entities/asset.entity';
+import { Asset, LicenseType } from '../../database/entities/asset.entity';
 import { RenderJob, RenderJobStatus } from '../../database/entities/render-job.entity';
 import { ApprovalRecord } from '../../database/entities/approval-record.entity';
 import { AuditEvent } from '../../database/entities/audit-event.entity';
@@ -40,6 +60,7 @@ describe('MagicVideoService', () => {
     };
     mockChannelRepo = {
       findOne: jest.fn().mockResolvedValue({ id: 'chan-1', name: 'Main Channel' }),
+      find: jest.fn().mockResolvedValue([{ id: 'chan-1', name: 'Main Channel' }]),
       create: jest.fn((e) => ({ id: 'chan-1', ...e })),
       save: jest.fn((e) => Promise.resolve({ id: 'chan-1', ...e })),
     };
@@ -135,5 +156,83 @@ describe('MagicVideoService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('generateOneClickVideo (safety fixes)', () => {
+    const storage = path.resolve('./storage_test_magic');
+    afterAll(() => fs.rmSync(storage, { recursive: true, force: true }));
+
+    it('leaves the generated script in review: no automatic approval record, no approved status', async () => {
+      const result = await service.generateOneClickVideo({ prompt: '3 Deep Ocean Facts', format: MagicVideoFormat.Short });
+      expect(result.project_id).toBe('proj-magic-1');
+      expect(mockApprovalRepo.save).not.toHaveBeenCalled();
+      for (const call of mockScriptRepo.save.mock.calls) expect(call[0].status).not.toBe(ScriptStatus.Approved);
+      const audit = mockAuditRepo.create.mock.calls.map((c: any[]) => c[0].action);
+      expect(audit).toContain('MAGIC_SCRIPT_AWAITING_REVIEW');
+    });
+
+    it('labels locally generated clips as user-created, never Creative Commons', async () => {
+      await service.generateOneClickVideo({ prompt: '3 Deep Ocean Facts', format: MagicVideoFormat.Short });
+      const assets = mockAssetRepo.create.mock.calls.map((c: any[]) => c[0]);
+      expect(assets.length).toBeGreaterThan(0);
+      for (const a of assets) {
+        expect(a.license_type).toBe(LicenseType.UserCreated);
+        expect(a.license_type).not.toBe(LicenseType.CreativeCommons);
+      }
+    });
+
+    it('does not call Pexels when external API calls are disabled, even with a key set', async () => {
+      const fetchSpy = jest.spyOn(global, 'fetch' as any).mockResolvedValue({ ok: false } as any);
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'STORAGE_ROOT') return './storage_test_magic';
+        if (key === 'PEXELS_API_KEY') return 'test-key';
+        if (key === 'ENABLE_EXTERNAL_API_CALLS') return false;
+        return null;
+      });
+      await service.generateOneClickVideo({
+        prompt: '3 Deep Ocean Facts',
+        format: MagicVideoFormat.Short,
+        visual_style: MagicVisualStyle.StockBroll,
+      });
+      expect(fetchSpy).not.toHaveBeenCalled();
+      fetchSpy.mockRestore();
+    });
+
+    it('labels Pexels clips with the Pexels licence, contributor and source page when allowed', async () => {
+      const fetchSpy = jest.spyOn(global, 'fetch' as any).mockImplementation(async (url: any) => {
+        if (String(url).includes('api.pexels.com')) {
+          return {
+            ok: true,
+            json: async () => ({
+              videos: [
+                {
+                  url: 'https://www.pexels.com/video/ocean-123/',
+                  user: { name: 'Jane Doe' },
+                  video_files: [{ height: 1280, link: 'https://videos.pexels.com/x.mp4' }],
+                },
+              ],
+            }),
+          } as any;
+        }
+        return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) } as any;
+      });
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'STORAGE_ROOT') return './storage_test_magic';
+        if (key === 'PEXELS_API_KEY') return 'test-key';
+        if (key === 'ENABLE_EXTERNAL_API_CALLS') return true;
+        return null;
+      });
+      await service.generateOneClickVideo({
+        prompt: '3 Deep Ocean Facts',
+        format: MagicVideoFormat.Short,
+        visual_style: MagicVisualStyle.StockBroll,
+      });
+      const assets = mockAssetRepo.create.mock.calls.map((c: any[]) => c[0]);
+      expect(assets[0].license_type).toBe(LicenseType.StockLicense);
+      expect(assets[0].creator).toBe('Jane Doe (Pexels)');
+      expect(assets[0].source_url).toBe('https://www.pexels.com/video/ocean-123/');
+      expect(assets[0].license_notes).toContain('Pexels License');
+      fetchSpy.mockRestore();
+    });
   });
 });

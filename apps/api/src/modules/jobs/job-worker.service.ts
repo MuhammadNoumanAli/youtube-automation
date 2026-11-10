@@ -4,6 +4,7 @@ import { JobStatus, JobType } from '../../database/entities/background-job.entit
 import { RenderingService } from '../rendering/rendering.service';
 import { YouTubeUploadService } from '../youtube/youtube-upload.service';
 import { MaintenanceService } from './maintenance.service';
+import { CountryballsRunnerService } from '../countryballs/countryballs-runner.service';
 
 @Injectable()
 export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
@@ -17,6 +18,7 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
     private readonly renderingService: RenderingService,
     private readonly youtubeUploadService: YouTubeUploadService,
     private readonly maintenanceService: MaintenanceService,
+    private readonly countryballsRunner: CountryballsRunnerService,
   ) {}
 
   onModuleInit() {
@@ -108,6 +110,13 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
               bytesFreed: cleanupResult.bytesFreed,
               errors: cleanupResult.errors,
             };
+            break;
+          }
+
+          case JobType.CountryballsRender: {
+            // Long job (voices + Remotion): the heartbeat keeps the lease alive and stops the render if the
+            // job is cancelled. The result waits in render review; nothing is approved or uploaded here.
+            result = await this.countryballsRunner.run(job, () => this.jobsService.extendLease(job.id, 900));
             break;
           }
 

@@ -12,13 +12,13 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Repository } from 'typeorm';
-import { ApprovalRecord, ApprovalType, ApprovalDecision } from '../../database/entities/approval-record.entity';
+import { ApprovalRecord } from '../../database/entities/approval-record.entity';
 import { Asset, AssetType, LicenseType } from '../../database/entities/asset.entity';
 import { AuditEvent } from '../../database/entities/audit-event.entity';
 import { ChannelProfile } from '../../database/entities/channel-profile.entity';
 import { Narration } from '../../database/entities/narration.entity';
 import { RenderJob, RenderJobStatus } from '../../database/entities/render-job.entity';
-import { Script, ScriptStatus } from '../../database/entities/script.entity';
+import { Script } from '../../database/entities/script.entity';
 import { VideoFormat, VideoProject, VideoProjectStatus } from '../../database/entities/video-project.entity';
 import { NarrationService } from '../narration/narration.service';
 import { RenderingService } from '../rendering/rendering.service';
@@ -132,16 +132,15 @@ export class MagicVideoService {
       ],
     });
 
-    // Automatically record approval for the generated script in magic flow
-    script.status = ScriptStatus.Approved;
-    await this.scriptRepo.save(script);
-    await this.approvalRepo.save(
-      this.approvalRepo.create({
-        video_project_id: project.id,
-        approval_type: ApprovalType.Script,
-        decision: ApprovalDecision.Approved,
-        notes: 'One-click magic generator automated script approval',
-        approved_by: 'magic_ai_pipeline',
+    // The generated script is NOT approved here. It stays in review: a person approves it with
+    // POST /api/scripts/:id/approve. The video below is a preview; uploads stay blocked until the script is approved.
+    await this.auditRepo.save(
+      this.auditRepo.create({
+        actor: 'magic_ai_pipeline',
+        action: 'MAGIC_SCRIPT_AWAITING_REVIEW',
+        entity_type: 'script',
+        entity_id: script.id,
+        details_json: { project_id: project.id, status: script.status },
       }),
     );
 
@@ -340,14 +339,20 @@ export class MagicVideoService {
     const filename = `scene_${opts.projectId}_${opts.sceneNumber}_${Date.now()}.mp4`;
     const clipPath = path.join(this.getAssetsDir(), filename);
 
-    // Pexels API Integration (if PEXELS_API_KEY is configured)
+    // Pexels is an external API: used only when ENABLE_EXTERNAL_API_CALLS=true and PEXELS_API_KEY is set.
     const pexelsKey = this.configService.get<string>('PEXELS_API_KEY');
-    if (pexelsKey && opts.visualStyle === MagicVisualStyle.StockBroll) {
+    if (pexelsKey && this.externalCallsAllowed() && opts.visualStyle === MagicVisualStyle.StockBroll) {
       try {
         const query = this.extractSearchKeywords(opts.visualDescription);
         const pexelsClip = await this.fetchPexelsClip(query, opts.width < opts.height, clipPath);
         if (pexelsClip) {
-          await this.recordAsset(opts.projectId, clipPath, 'Pexels Video Library', query);
+          await this.recordAsset(opts.projectId, clipPath, {
+            licenseType: LicenseType.StockLicense,
+            creator: pexelsClip.creator ? `${pexelsClip.creator} (Pexels)` : 'Pexels contributor',
+            sourceUrl: pexelsClip.pageUrl,
+            attribution: pexelsClip.creator ? `Video by ${pexelsClip.creator} on Pexels` : 'Video from Pexels',
+            notes: `Pexels License (https://www.pexels.com/license/): free to use, attribution not required; not Creative Commons. Search: "${query}"`,
+          });
           return clipPath;
         }
       } catch (err: any) {
@@ -390,37 +395,57 @@ export class MagicVideoService {
       });
     });
 
-    await this.recordAsset(opts.projectId, clipPath, 'Local Dynamic Motion Generator', opts.visualDescription);
+    await this.recordAsset(opts.projectId, clipPath, {
+      licenseType: LicenseType.UserCreated,
+      creator: 'YouTube Automation Studio (local motion generator)',
+      sourceUrl: null,
+      attribution: null,
+      notes: `Generated locally with FFmpeg by this studio (no third-party material). Scene: ${opts.visualDescription}`,
+    });
     return clipPath;
   }
 
+  private externalCallsAllowed(): boolean {
+    const v = this.configService.get<boolean | string>('ENABLE_EXTERNAL_API_CALLS');
+    return v === true || v === 'true';
+  }
+
   /**
-   * Search and download high-definition vertical clip from Pexels API
+   * Search and download high-definition vertical clip from Pexels API.
+   * Returns the contributor name and the Pexels page URL for the asset's provenance record.
    */
-  private async fetchPexelsClip(query: string, isVertical: boolean, destinationPath: string): Promise<boolean> {
+  private async fetchPexelsClip(
+    query: string,
+    isVertical: boolean,
+    destinationPath: string,
+  ): Promise<{ creator: string | null; pageUrl: string | null } | null> {
     const apiKey = this.configService.get<string>('PEXELS_API_KEY');
-    if (!apiKey) return false;
+    if (!apiKey || !this.externalCallsAllowed()) return null;
 
     const orientation = isVertical ? 'portrait' : 'landscape';
     const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&orientation=${orientation}&per_page=3`;
 
     const res = await fetch(url, { headers: { Authorization: apiKey } });
-    if (!res.ok) return false;
+    if (!res.ok) return null;
 
     const data = await res.json();
-    const videoFiles = data.videos?.[0]?.video_files;
-    if (!videoFiles || videoFiles.length === 0) return false;
+    const video = data.videos?.[0];
+    const videoFiles = video?.video_files;
+    if (!videoFiles || videoFiles.length === 0) return null;
 
     // Pick 720p or 1080p stream
     const bestFile = videoFiles.find((f: any) => f.height >= 720) || videoFiles[0];
-    if (!bestFile?.link) return false;
+    if (!bestFile?.link) return null;
 
     const videoRes = await fetch(bestFile.link);
-    if (!videoRes.ok) return false;
+    if (!videoRes.ok) return null;
 
     const buffer = Buffer.from(await videoRes.arrayBuffer());
     fs.writeFileSync(destinationPath, buffer);
-    return true;
+    return {
+      creator: typeof video?.user?.name === 'string' ? video.user.name : null,
+      pageUrl: typeof video?.url === 'string' ? video.url : null,
+    };
   }
 
   private extractSearchKeywords(desc: string): string {
@@ -471,7 +496,17 @@ export class MagicVideoService {
     return filters.join(',');
   }
 
-  private async recordAsset(projectId: string, filePath: string, attribution: string, notes: string): Promise<Asset> {
+  private async recordAsset(
+    projectId: string,
+    filePath: string,
+    licence: {
+      licenseType: LicenseType;
+      creator: string;
+      sourceUrl: string | null;
+      attribution: string | null;
+      notes: string;
+    },
+  ): Promise<Asset> {
     const fileBuf = fs.readFileSync(filePath);
     const hash = crypto.createHash('sha256').update(fileBuf).digest('hex');
 
@@ -482,11 +517,12 @@ export class MagicVideoService {
       original_filename: path.basename(filePath),
       mime_type: 'video/mp4',
       checksum_sha256: hash,
-      source_url: null,
-      creator: attribution,
-      license_type: LicenseType.CreativeCommons,
-      license_notes: notes,
-      attribution_text: attribution,
+      source_url: licence.sourceUrl,
+      creator: licence.creator,
+      license_type: licence.licenseType,
+      license_notes: licence.notes,
+      attribution_text: licence.attribution,
+      // Both licences allow commercial use: our own generated clips, and the Pexels License.
       commercial_use_allowed: true,
       proof_of_permission_path: null,
     });

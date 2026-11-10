@@ -11,6 +11,8 @@ export enum JobType {
   Render = 'render',
   Upload = 'upload',
   Maintenance = 'maintenance',
+  /** Countryballs animation: voices + Remotion render of an approved spec (apps/animation). */
+  CountryballsRender = 'countryballs_render',
 }
 
 export enum JobStatus {

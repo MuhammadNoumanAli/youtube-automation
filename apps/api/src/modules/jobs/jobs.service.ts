@@ -143,6 +143,24 @@ export class JobsService {
     return this.jobRepo.findOne({ where: { id: candidate.id } });
   }
 
+  /**
+   * Keeps a long-running job's lease alive (heartbeat). Returns false when this worker no longer holds the job,
+   * e.g. it was cancelled, so the caller can stop its work.
+   */
+  async extendLease(jobId: string, lockDurationSeconds = 900): Promise<boolean> {
+    const result = await this.jobRepo
+      .createQueryBuilder()
+      .update(BackgroundJob)
+      .set({ lock_expires_at: new Date(Date.now() + lockDurationSeconds * 1000) })
+      .where('id = :id AND status = :processing AND locked_by = :worker', {
+        id: jobId,
+        processing: JobStatus.Processing,
+        worker: this.workerId,
+      })
+      .execute();
+    return (result.affected ?? 0) > 0;
+  }
+
   async completeJob(jobId: string, result?: Record<string, unknown>): Promise<BackgroundJob> {
     const job = await this.jobRepo.findOne({ where: { id: jobId } });
     if (!job) throw new NotFoundException(`Job ${jobId} not found`);
@@ -173,6 +191,12 @@ export class JobsService {
   async failJob(jobId: string, errorMessage: string): Promise<BackgroundJob> {
     const job = await this.jobRepo.findOne({ where: { id: jobId } });
     if (!job) throw new NotFoundException(`Job ${jobId} not found`);
+
+    // A job cancelled while it was running stays cancelled: a failure report must not schedule a retry.
+    if (job.status === JobStatus.Cancelled) {
+      this.logger.warn(`Job ${jobId} was cancelled while running; not retrying (${errorMessage})`);
+      return job;
+    }
 
     job.last_error = errorMessage;
     job.locked_by = null;

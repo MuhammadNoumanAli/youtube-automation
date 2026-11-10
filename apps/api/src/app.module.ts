@@ -18,6 +18,7 @@ import { RenderingModule } from './modules/rendering/rendering.module';
 import { YouTubeModule } from './modules/youtube/youtube.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { MagicVideoModule } from './modules/magic-video/magic-video.module';
+import { CountryballsModule } from './modules/countryballs/countryballs.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { MagicVideoModule } from './modules/magic-video/magic-video.module';
     YouTubeModule,
     JobsModule,
     MagicVideoModule,
+    CountryballsModule,
   ],
 })
 export class AppModule {}

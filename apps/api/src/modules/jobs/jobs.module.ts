@@ -8,12 +8,14 @@ import { JobWorkerService } from './job-worker.service';
 import { JobsController } from './jobs.controller';
 import { RenderingModule } from '../rendering/rendering.module';
 import { YouTubeModule } from '../youtube/youtube.module';
+import { CountryballsRunnerModule } from '../countryballs/countryballs-runner.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([BackgroundJob, AuditEvent]),
     RenderingModule,
     YouTubeModule,
+    CountryballsRunnerModule,
   ],
   controllers: [JobsController],
   providers: [JobsService, MaintenanceService, JobWorkerService],

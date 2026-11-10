@@ -150,6 +150,36 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   FFPROBE_PATH?: string;
+
+  /** Pexels stock video key for Magic Studio (free). Only used when ENABLE_EXTERNAL_API_CALLS=true. */
+  @IsString()
+  @IsOptional()
+  PEXELS_API_KEY?: string;
+
+  /** Folder of the Countryballs animation app. Default: ../animation next to apps/api. */
+  @IsString()
+  @IsOptional()
+  ANIMATION_APP_DIR?: string;
+
+  /** Where Countryballs specs, renders, audio, cache and temp files go. Default: <STORAGE_ROOT>/animation. */
+  @IsString()
+  @IsOptional()
+  ANIMATION_STUDIO_ROOT?: string;
+
+  /** Parallel browser tabs for Remotion (1-4). */
+  @IsNumber()
+  @IsOptional()
+  ANIMATION_RENDER_CONCURRENCY: number = 2;
+
+  /** Optional Chrome/Chromium for Remotion; empty = Remotion's own headless browser (already installed on the studio PC). */
+  @IsString()
+  @IsOptional()
+  ANIMATION_BROWSER_EXECUTABLE?: string;
+
+  /** Test tones instead of real voices (machines without the voice models). Renders made this way cannot be uploaded. */
+  @IsBoolean()
+  @IsOptional()
+  ANIMATION_FAKE_VOICES: boolean = false;
 }
 
 export function validate(config: Record<string, unknown>) {
@@ -165,6 +195,8 @@ export function validate(config: Record<string, unknown>) {
       config.ENABLE_YOUTUBE_UPLOADS === 'true' || config.ENABLE_YOUTUBE_UPLOADS === true,
     ENABLE_PUBLIC_RELEASE:
       config.ENABLE_PUBLIC_RELEASE === 'true' || config.ENABLE_PUBLIC_RELEASE === true,
+    ANIMATION_RENDER_CONCURRENCY: config.ANIMATION_RENDER_CONCURRENCY ? Number(config.ANIMATION_RENDER_CONCURRENCY) : 2,
+    ANIMATION_FAKE_VOICES: config.ANIMATION_FAKE_VOICES === 'true' || config.ANIMATION_FAKE_VOICES === true,
   };
 
   const validatedConfig = plainToInstance(EnvironmentVariables, transformed, {

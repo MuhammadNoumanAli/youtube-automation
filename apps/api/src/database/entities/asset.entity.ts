@@ -25,6 +25,8 @@ export enum LicenseType {
   CreativeCommons = 'creative_commons',
   PurchasedLicense = 'purchased_license',
   FairUseQuoted = 'fair_use_quoted',
+  /** A stock library's own licence (e.g. the Pexels License): not Creative Commons; terms in license_notes. */
+  StockLicense = 'stock_license',
 }
 
 @Entity('assets')
