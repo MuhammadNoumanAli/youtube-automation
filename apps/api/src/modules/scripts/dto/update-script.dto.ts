@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
-import { SceneItem, ScriptStatus, VideoMetadataPayload } from '../../../database/entities/script.entity';
+import { IsArray, IsOptional, IsString } from 'class-validator';
+import { SceneItem, VideoMetadataPayload } from '../../../database/entities/script.entity';
 
 export class UpdateScriptDto {
   @ApiPropertyOptional({ description: 'Full script content text' })
@@ -22,8 +22,6 @@ export class UpdateScriptDto {
   @IsOptional()
   metadata_json?: VideoMetadataPayload;
 
-  @ApiPropertyOptional({ enum: ScriptStatus })
-  @IsEnum(ScriptStatus)
-  @IsOptional()
-  status?: ScriptStatus;
+  // No `status` here on purpose: a script is approved only through POST /api/scripts/:id/approve, which records
+  // who approved it. With the global ValidationPipe (forbidNonWhitelisted) a PATCH that sends `status` gets a 400.
 }

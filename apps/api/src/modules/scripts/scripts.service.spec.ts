@@ -123,4 +123,23 @@ describe('ScriptsService', () => {
       }),
     );
   });
+
+  describe('update cannot approve (approval only via the approve endpoint)', () => {
+    it('ignores a status smuggled into an edit and keeps the script in review', async () => {
+      const saved = await service.update('script-1', { content: 'edited', status: ScriptStatus.Approved } as any);
+      expect(saved.content).toBe('edited');
+      expect(saved.status).toBe(ScriptStatus.Review);
+      expect(auditRepoMock.save).not.toHaveBeenCalled();
+    });
+
+    it('the PATCH body is rejected by the global ValidationPipe when it contains status', async () => {
+      const { ValidationPipe } = await import('@nestjs/common');
+      const { UpdateScriptDto } = await import('./dto/update-script.dto');
+      const pipe = new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true });
+      await expect(
+        pipe.transform({ content: 'x', status: 'approved' }, { type: 'body', metatype: UpdateScriptDto }),
+      ).rejects.toMatchObject({ response: { message: ['property status should not exist'] } });
+      await expect(pipe.transform({ content: 'x' }, { type: 'body', metatype: UpdateScriptDto })).resolves.toMatchObject({ content: 'x' });
+    });
+  });
 });

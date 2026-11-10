@@ -110,7 +110,10 @@ export class ScriptsService {
         'Cannot modify an already approved script. Please generate or create a new draft version.',
       );
     }
-    Object.assign(script, dto);
+    // Status never changes through an edit (defence in depth; the DTO has no status field either).
+    const { status: _ignored, ...changes } = dto as UpdateScriptDto & { status?: unknown };
+    void _ignored;
+    Object.assign(script, changes);
     return this.scriptRepo.save(script);
   }
 
