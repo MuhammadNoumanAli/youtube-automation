@@ -6,6 +6,7 @@
  */
 import type { Expression } from '../character/expressions';
 import type { VoiceAssignment, VoiceScript, VoiceSpec } from './voice-types';
+import { PROP_KINDS, type PropKind } from './types';
 
 export type VideoFormat = '16:9' | '9:16';
 
@@ -17,15 +18,19 @@ export interface LineSpec {
   text: string;
   /** Expression the speaker switches to when the line starts. */
   expression?: Expression;
+  /** Prop that appears on the speaker when the line starts (e.g. a crown on the winning line). */
+  prop?: PropKind;
 }
 
 export type SceneSpec =
   | { template: 'title-card'; id: string; title: string; subtitle?: string; lines: LineSpec[] }
   | { template: 'map-intro'; id: string; country: string; title?: string; subtitle?: string; lines: LineSpec[] }
   | { template: 'map-focus'; id: string; countries: string[]; lines: LineSpec[] }
-  | { template: 'dialogue'; id: string; cast: string[]; setting?: 'countryside' | 'plain' | 'coast'; lines: LineSpec[] };
+  | { template: 'dialogue'; id: string; cast: string[]; setting?: 'countryside' | 'plain' | 'coast'; lines: LineSpec[] }
+  /** Two countryballs trade lines over a close-up map: they lunge while talking, captions are speech bubbles. */
+  | { template: 'roast-battle'; id: string; countries: [string, string]; title?: string; lines: LineSpec[] };
 
-export const TEMPLATES = ['title-card', 'map-intro', 'map-focus', 'dialogue'] as const;
+export const TEMPLATES = ['title-card', 'map-intro', 'map-focus', 'dialogue', 'roast-battle'] as const;
 
 export interface CastMember {
   /** Character id from the character library (engine/characters.ts). */
@@ -77,14 +82,27 @@ export function validateSpec(spec: VideoSpec, characters: Set<string>, geo: Set<
     sceneIds.add(s.id);
     if (!(TEMPLATES as readonly string[]).includes(s.template)) p.push(`${where}: unknown template "${s.template}"`);
     const onStage: string[] =
-      s.template === 'map-intro' ? [s.country] : s.template === 'map-focus' ? s.countries ?? [] : s.template === 'dialogue' ? s.cast ?? [] : [];
+      s.template === 'map-intro'
+        ? [s.country]
+        : s.template === 'map-focus' || s.template === 'roast-battle'
+          ? s.countries ?? []
+          : s.template === 'dialogue'
+            ? s.cast ?? []
+            : [];
     for (const id of onStage) {
       if (!cast.has(id)) p.push(`${where}: "${id}" is not in the cast`);
-      if ((s.template === 'map-intro' || s.template === 'map-focus') && !geo.has(id)) p.push(`${where}: no map data for "${id}" (add it to engine/countries.ts)`);
+      if ((s.template === 'map-intro' || s.template === 'map-focus' || s.template === 'roast-battle') && !geo.has(id))
+        p.push(`${where}: no map data for "${id}" (add it to engine/countries.ts)`);
     }
     if (s.template === 'dialogue' && (onStage.length < 1 || onStage.length > 3)) p.push(`${where}: dialogue needs 1-3 characters`);
     if (s.template === 'map-focus' && (onStage.length < 2 || onStage.length > 4)) p.push(`${where}: map-focus needs 2-4 countries`);
-    if ((s.template === 'title-card' || s.template === 'map-intro') && s.title && s.title.length > 40) p.push(`${where}: title longer than 40 characters`);
+    if (s.template === 'roast-battle') {
+      if (onStage.length !== 2 || onStage[0] === onStage[1]) p.push(`${where}: roast-battle needs exactly 2 different countries`);
+      for (const l of s.lines ?? [])
+        if (l.speaker !== 'narrator' && !onStage.includes(l.speaker)) p.push(`${where}: line ${l.id}: "${l.speaker}" is not one of the two countries`);
+    }
+    if ((s.template === 'title-card' || s.template === 'map-intro' || s.template === 'roast-battle') && s.title && s.title.length > 40)
+      p.push(`${where}: title longer than 40 characters`);
     for (const l of s.lines ?? []) {
       if (!/^[A-Za-z0-9_-]{1,60}$/.test(l.id ?? '')) p.push(`${where}: line id "${l.id}" invalid`);
       if (lineIds.has(l.id)) p.push(`${where}: duplicate line id "${l.id}"`);
@@ -92,6 +110,8 @@ export function validateSpec(spec: VideoSpec, characters: Set<string>, geo: Set<
       if (l.speaker !== 'narrator' && !cast.has(l.speaker)) p.push(`${where}: line ${l.id}: speaker "${l.speaker}" is not in the cast`);
       if (!l.text?.trim()) p.push(`${where}: line ${l.id}: empty text`);
       if ((l.text ?? '').length > 90) p.push(`${where}: line ${l.id}: longer than 90 characters`);
+      if (l.prop !== undefined && !(PROP_KINDS as readonly string[]).includes(l.prop)) p.push(`${where}: line ${l.id}: unknown prop "${l.prop}"`);
+      if (l.prop !== undefined && l.speaker === 'narrator') p.push(`${where}: line ${l.id}: the narrator cannot hold a prop`);
     }
   }
   return p;

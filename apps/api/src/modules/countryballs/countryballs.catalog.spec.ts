@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { COUNTRY_IDS, EXPRESSIONS, SCENE_TYPES, VOICES } from './countryballs.catalog';
+import { COUNTRY_IDS, EXPRESSIONS, PROPS, SCENE_TYPES, VOICES } from './countryballs.catalog';
 
 /**
  * Keeps the form's lists in step with the animation app. Runs when apps/animation sits next to apps/api (the normal
@@ -27,6 +27,16 @@ const read = (rel: string) => fs.readFileSync(path.join(appDir, rel), 'utf8');
     for (const t of SCENE_TYPES) expect(spec).toContain(`'${t}'`);
     const catalog = read('voice/catalog.mjs');
     for (const v of VOICES) expect(catalog).toContain(`'${v}'`);
+  });
+
+  it('props match the animation app and every animation country is offered in the form', () => {
+    const types = read('src/engine/types.ts');
+    const propLine = types.split('\n').find((l) => l.includes('export const PROP_KINDS')) ?? '';
+    for (const p of PROPS) expect(propLine).toContain(`'${p}'`);
+    const characters = read('src/engine/characters.ts');
+    const animIds = [...characters.matchAll(/\n\s+([a-z_]+): \{\s*(?:\n\s*)?id: '/g)].map((m) => m[1]);
+    expect(animIds.length).toBeGreaterThanOrEqual(60);
+    expect([...COUNTRY_IDS].sort()).toEqual([...animIds].sort());
   });
 });
 

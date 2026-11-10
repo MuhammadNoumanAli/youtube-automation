@@ -44,11 +44,20 @@ describe('CreateCountryballsDto (global ValidationPipe settings)', () => {
     b.cast[0].voice = 'some_voice';
     b.scenes[0].type = 'explosion';
     b.scenes[1].lines[0].expression = 'smug';
+    b.scenes[0].lines[0].prop = 'rocket';
     const errs = await errorsOf(b);
     expect(errs).toMatch(/country must be one of/);
     expect(errs).toMatch(/voice must be one of/);
     expect(errs).toMatch(/type must be one of/);
     expect(errs).toMatch(/expression must be one of/);
+    expect(errs).toMatch(/prop must be one of/);
+  });
+
+  it('accepts a roast-battle scene with a prop', async () => {
+    const b: any = body();
+    b.scenes.push({ type: 'roast-battle', countries: ['netherlands', 'belgium'], title: 'NL vs BE', lines: [{ speaker: 'belgium', text: 'Fries are mine.', prop: 'crown' }] });
+    const dto = (await pipe.transform(b, meta)) as CreateCountryballsDto;
+    expect(dto.scenes[2].lines[0].prop).toBe('crown');
   });
 
   it('rejects lines over 90 characters, empty lines and too many scenes', async () => {

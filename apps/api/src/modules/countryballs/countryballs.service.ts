@@ -16,6 +16,7 @@ import {
   DIALOGUE_SETTINGS,
   EXPRESSIONS,
   LIMITS,
+  PROPS,
   SCENE_TYPES,
   VOICES,
 } from './countryballs.catalog';
@@ -71,6 +72,7 @@ export class CountryballsService {
       voices: VOICES.map((id) => ({ id, label: `${id.startsWith('af_') ? 'Female' : 'Male'}: ${id.slice(3)}` })),
       default_narrator_voice: DEFAULT_NARRATOR_VOICE,
       expressions: EXPRESSIONS,
+      props: PROPS,
       scene_types: SCENE_TYPES,
       dialogue_settings: DIALOGUE_SETTINGS,
       formats: [

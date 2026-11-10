@@ -19,13 +19,15 @@ export interface SpecLine {
   speaker: string;
   text: string;
   expression?: string;
+  prop?: string;
 }
 
 export type SpecScene =
   | { template: 'title-card'; id: string; title: string; subtitle?: string; lines: SpecLine[] }
   | { template: 'map-intro'; id: string; country: string; title?: string; subtitle?: string; lines: SpecLine[] }
   | { template: 'map-focus'; id: string; countries: string[]; lines: SpecLine[] }
-  | { template: 'dialogue'; id: string; cast: string[]; setting?: string; lines: SpecLine[] };
+  | { template: 'dialogue'; id: string; cast: string[]; setting?: string; lines: SpecLine[] }
+  | { template: 'roast-battle'; id: string; countries: [string, string]; title?: string; lines: SpecLine[] };
 
 export interface CountryballsSpec {
   schemaVersion: 1;
@@ -67,7 +69,14 @@ export function buildSpec(dto: CreateCountryballsDto, specId: string, format: Sp
       if (text.length > LIMITS.lineChars) problems.push(`${where}, line ${li + 1}: longer than ${LIMITS.lineChars} characters`);
       if (l.speaker !== 'narrator' && !castIds.has(l.speaker))
         problems.push(`${where}, line ${li + 1}: ${COUNTRY_NAMES[l.speaker as CountryId] ?? l.speaker} speaks but is not in the cast`);
-      return { id: `${id}-l${li + 1}`, speaker: l.speaker, text, ...(l.expression ? { expression: l.expression } : {}) };
+      if (l.prop && l.speaker === 'narrator') problems.push(`${where}, line ${li + 1}: the narrator cannot hold a prop`);
+      return {
+        id: `${id}-l${li + 1}`,
+        speaker: l.speaker,
+        text,
+        ...(l.expression ? { expression: l.expression } : {}),
+        ...(l.prop ? { prop: l.prop } : {}),
+      };
     });
     const onStage = (ids: string[]) => {
       for (const c of ids) if (!castIds.has(c)) problems.push(`${where}: ${COUNTRY_NAMES[c as CountryId] ?? c} is not in the cast`);
@@ -109,6 +118,21 @@ export function buildSpec(dto: CreateCountryballsDto, specId: string, format: Sp
           if (l.speaker !== 'narrator' && !who.includes(l.speaker as CountryId))
             problems.push(`${where}: ${COUNTRY_NAMES[l.speaker as CountryId] ?? l.speaker} speaks but is not on screen in this scene`);
         return { template: 'dialogue', id, cast: [...who], setting: s.setting ?? 'countryside', lines };
+      }
+      case 'roast-battle': {
+        const pair = s.countries ?? [];
+        if (pair.length !== 2 || pair[0] === pair[1]) problems.push(`${where}: choose exactly 2 different countries`);
+        onStage(pair);
+        for (const l of s.lines)
+          if (l.speaker !== 'narrator' && !pair.includes(l.speaker as CountryId))
+            problems.push(`${where}: ${COUNTRY_NAMES[l.speaker as CountryId] ?? l.speaker} is not one of the two countries`);
+        return {
+          template: 'roast-battle',
+          id,
+          countries: [pair[0] ?? '', pair[1] ?? ''] as [string, string],
+          ...(s.title?.trim() ? { title: s.title.trim() } : {}),
+          lines,
+        };
       }
       default:
         problems.push(`${where}: unknown scene type`);
@@ -152,9 +176,12 @@ export function readableScript(spec: CountryballsSpec): string {
           ? `Map: ${name(sc.country)}`
           : sc.template === 'map-focus'
             ? `Map: ${sc.countries.map(name).join(', ')}`
-            : `Dialogue (${sc.setting ?? 'countryside'}): ${sc.cast.map(name).join(', ')}`;
+            : sc.template === 'roast-battle'
+              ? `Roast battle: ${sc.countries.map(name).join(' vs ')}`
+              : `Dialogue (${sc.setting ?? 'countryside'}): ${sc.cast.map(name).join(', ')}`;
     out.push(`## Scene ${i + 1}. ${where}`);
-    for (const l of sc.lines) out.push(`${name(l.speaker)}${l.expression ? ` (${l.expression})` : ''}: ${l.text}`);
+    for (const l of sc.lines)
+      out.push(`${name(l.speaker)}${l.expression ? ` (${l.expression})` : ''}${l.prop ? ` [${l.prop}]` : ''}: ${l.text}`);
     out.push('');
   });
   return out.join('\n');
@@ -182,8 +209,10 @@ export function scenePlan(spec: CountryballsSpec): SceneItem[] {
           ? `Map intro of ${COUNTRY_NAMES[s.country as CountryId] ?? s.country}`
           : s.template === 'map-focus'
             ? `Map with ${s.countries.map((c) => COUNTRY_NAMES[c as CountryId] ?? c).join(', ')}`
-            : `Countryballs dialogue (${s.setting ?? 'countryside'})`,
-    onScreenText: s.template === 'title-card' ? s.title : undefined,
+            : s.template === 'roast-battle'
+              ? `Roast battle on a close-up map: ${s.countries.map((c) => COUNTRY_NAMES[c as CountryId] ?? c).join(' vs ')}`
+              : `Countryballs dialogue (${s.setting ?? 'countryside'})`,
+    onScreenText: s.template === 'title-card' || (s.template === 'roast-battle' && s.title) ? s.title : undefined,
     narrationSnippet: s.lines.map((l) => l.text).join(' ').slice(0, 200),
     suggestedAssetType: 'video',
   }));

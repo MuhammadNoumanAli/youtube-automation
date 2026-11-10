@@ -6,7 +6,7 @@ import type { CharacterDefinition, SceneConfig } from '../engine/types';
 import type { PlacedScene } from '../engine/timeline';
 import { CharacterLayer } from './CharacterLayer';
 import { Landscape, StageElements } from './elements';
-import { Captions, Titles } from './Overlay';
+import { Captions, SpeechCaptions, Titles } from './Overlay';
 
 /** Renders one scene from its configuration. Frame numbers are local to the scene (Remotion <Sequence>). */
 export const SceneRenderer: React.FC<{
@@ -93,6 +93,31 @@ export const SceneRenderer: React.FC<{
       </svg>
       <Titles elements={scene.elements} frame={frame} />
       <Captions captions={scene.captions} frame={frame} characters={characters} />
+      <SpeechCaptions
+        captions={scene.captions}
+        frame={frame}
+        fps={fps}
+        characters={characters}
+        onScreen={scene.characters.filter((c) => !c.enter || frame >= c.enter.frame).map((c) => c.ref)}
+        anchor={(ref) => {
+          const c = scene.characters.find((ch) => ch.ref === ref);
+          if (!c) return null;
+          const r = c.radius ?? 100;
+          let x: number;
+          let y: number;
+          if (c.position.space === 'geo') {
+            const p = project?.([track(frame, c.position.lon), track(frame, c.position.lat)]);
+            if (!p) return null;
+            [x, y] = p;
+          } else {
+            // stage space goes through the stage camera
+            x = (track(frame, c.position.x) - camX) * zoom + width / 2;
+            y = (track(frame, c.position.y) - camY) * zoom + height / 2;
+          }
+          const rr = scene.background.type === 'worldMap' ? r : r * zoom;
+          return { x, top: y - rr * 2, bottom: y + rr * 0.2 };
+        }}
+      />
     </AbsoluteFill>
   );
 };

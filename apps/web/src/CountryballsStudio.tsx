@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
  * Nothing here approves anything; approval stays on the existing Production Studio and Render Review screens.
  */
 
-type SceneType = 'title-card' | 'map-intro' | 'map-focus' | 'dialogue';
+type SceneType = 'title-card' | 'map-intro' | 'map-focus' | 'dialogue' | 'roast-battle';
 type FormatId = 'short' | 'long_form' | 'both';
 
 interface Options {
@@ -15,6 +15,7 @@ interface Options {
   voices: { id: string; label: string }[];
   default_narrator_voice: string;
   expressions: string[];
+  props?: string[];
   scene_types: SceneType[];
   dialogue_settings: string[];
   formats: { id: FormatId; label: string }[];
@@ -32,6 +33,7 @@ interface LineRow {
   speaker: string;
   text: string;
   expression: string;
+  prop: string;
 }
 
 interface SceneRow {
@@ -87,6 +89,18 @@ const SCENE_LABELS: Record<SceneType, string> = {
   'map-intro': 'Map: zoom to one country',
   'map-focus': 'Map: several countries',
   dialogue: 'Dialogue (countryballs talk)',
+  'roast-battle': 'Roast battle (2 countries, map)',
+};
+
+const PROP_LABELS: Record<string, string> = {
+  crown: '👑 crown',
+  trophy: '🏆 trophy',
+  sweat: '💧 sweat',
+  anger: '💢 anger',
+  fire: '🔥 fire',
+  tears: '😢 tears',
+  ice: '🧊 ice',
+  sparkles: '✨ sparkles',
 };
 
 const STATUS_HELP: Record<string, string> = {
@@ -105,7 +119,7 @@ const STATUS_HELP: Record<string, string> = {
 
 const RENDERABLE = new Set(['script_approved', 'failed', 'render_review', 'assets_pending']);
 
-const emptyLine = (speaker = 'narrator'): LineRow => ({ speaker, text: '', expression: '' });
+const emptyLine = (speaker = 'narrator'): LineRow => ({ speaker, text: '', expression: '', prop: '' });
 const emptyScene = (type: SceneType = 'dialogue'): SceneRow => ({
   type,
   title: '',
@@ -115,6 +129,35 @@ const emptyScene = (type: SceneType = 'dialogue'): SceneRow => ({
   setting: 'countryside',
   lines: [emptyLine()],
 });
+
+const ROAST_EXAMPLE: Omit<FormState, 'channel_profile_id'> = {
+  title: 'Italy vs France: the food fight',
+  format: 'short',
+  narrator_voice: 'am_michael',
+  cast: [
+    { country: 'italy', voice: 'am_puck', speed: 1.05 },
+    { country: 'france', voice: 'am_adam', speed: 1 },
+  ],
+  scenes: [
+    {
+      ...emptyScene('roast-battle'),
+      title: 'Italy vs France',
+      countries: ['italy', 'france'],
+      lines: [
+        { speaker: 'italy', text: "You call that a croissant? It's just butter with confidence.", expression: 'angry', prop: '' },
+        { speaker: 'france', text: 'Says the country that argues about pineapple for fun.', expression: 'determined', prop: '' },
+        { speaker: 'italy', text: 'Pineapple on pizza is a crime, not a debate!', expression: 'surprised', prop: 'sweat' },
+        { speaker: 'france', text: 'My cheese has more varieties than your excuses.', expression: 'happy', prop: 'sparkles' },
+        { speaker: 'italy', text: "Then let's settle it. Who makes the better pasta?", expression: 'determined', prop: 'fire' },
+        { speaker: 'france', text: '...Fine. You win this one.', expression: 'sad', prop: 'tears' },
+        { speaker: 'italy', text: 'Grazie. The crown stays in Rome.', expression: 'happy', prop: 'crown' },
+        { speaker: 'narrator', text: 'Next time: who makes the better coffee?', expression: '', prop: '' },
+      ],
+    },
+  ],
+  description: 'Italy and France settle their food fight once and for all. An original countryballs roast.',
+  tags: 'countryballs, italy, france, roast, animation',
+};
 
 const EXAMPLE: Omit<FormState, 'channel_profile_id'> = {
   title: 'Why the Netherlands is still dry',
@@ -130,24 +173,24 @@ const EXAMPLE: Omit<FormState, 'channel_profile_id'> = {
       ...emptyScene('title-card'),
       title: 'Lower than the sea',
       lines: [
-        { speaker: 'narrator', text: 'This country is lower than the sea right next to it.', expression: '' },
-        { speaker: 'narrator', text: 'So how is it still dry?', expression: '' },
+        { speaker: 'narrator', text: 'This country is lower than the sea right next to it.', expression: '', prop: '' },
+        { speaker: 'narrator', text: 'So how is it still dry?', expression: '', prop: '' },
       ],
     },
     {
       ...emptyScene('map-intro'),
       country: 'netherlands',
       lines: [
-        { speaker: 'narrator', text: 'Meet the Netherlands, by the North Sea.', expression: '' },
-        { speaker: 'netherlands', text: 'Hallo! Much of my land lies below sea level.', expression: 'happy' },
+        { speaker: 'narrator', text: 'Meet the Netherlands, by the North Sea.', expression: '', prop: '' },
+        { speaker: 'netherlands', text: 'Hallo! Much of my land lies below sea level.', expression: 'happy', prop: '' },
       ],
     },
     {
       ...emptyScene('map-focus'),
       countries: ['netherlands', 'belgium', 'germany'],
       lines: [
-        { speaker: 'belgium', text: 'Wait, your fields are under the water line?', expression: 'surprised' },
-        { speaker: 'germany', text: 'And you are not worried at all?', expression: 'surprised' },
+        { speaker: 'belgium', text: 'Wait, your fields are under the water line?', expression: 'surprised', prop: '' },
+        { speaker: 'germany', text: 'And you are not worried at all?', expression: 'surprised', prop: '' },
       ],
     },
     {
@@ -155,9 +198,9 @@ const EXAMPLE: Omit<FormState, 'channel_profile_id'> = {
       countries: ['netherlands', 'germany'],
       setting: 'coast',
       lines: [
-        { speaker: 'netherlands', text: 'We built dikes, pumps and a lot of windmills.', expression: 'determined' },
-        { speaker: 'germany', text: 'Very efficient. I approve.', expression: 'happy' },
-        { speaker: 'narrator', text: 'Dry feet, every single day.', expression: '' },
+        { speaker: 'netherlands', text: 'We built dikes, pumps and a lot of windmills.', expression: 'determined', prop: '' },
+        { speaker: 'germany', text: 'Very efficient. I approve.', expression: 'happy', prop: '' },
+        { speaker: 'narrator', text: 'Dry feet, every single day.', expression: '', prop: '' },
       ],
     },
   ],
@@ -251,8 +294,8 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
       ),
     }));
 
-  const loadExample = () => {
-    setForm((f) => ({ ...EXAMPLE, channel_profile_id: f.channel_profile_id }));
+  const loadExample = (example: Omit<FormState, 'channel_profile_id'> = EXAMPLE) => {
+    setForm((f) => ({ ...example, channel_profile_id: f.channel_profile_id }));
     setErrors(null);
     setCreated(null);
   };
@@ -265,12 +308,17 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
     cast: form.cast.map((c) => ({ country: c.country, voice: c.voice, ...(c.speed !== 1 ? { speed: c.speed } : {}) })),
     scenes: form.scenes.map((s) => ({
       type: s.type,
-      ...(s.type === 'title-card' || s.type === 'map-intro' ? (s.title.trim() ? { title: s.title.trim() } : {}) : {}),
+      ...(s.type === 'title-card' || s.type === 'map-intro' || s.type === 'roast-battle' ? (s.title.trim() ? { title: s.title.trim() } : {}) : {}),
       ...(s.type === 'title-card' || s.type === 'map-intro' ? (s.subtitle.trim() ? { subtitle: s.subtitle.trim() } : {}) : {}),
       ...(s.type === 'map-intro' && s.country ? { country: s.country } : {}),
-      ...(s.type === 'map-focus' || s.type === 'dialogue' ? { countries: s.countries.filter((c) => castIds.includes(c)) } : {}),
+      ...(s.type === 'map-focus' || s.type === 'dialogue' || s.type === 'roast-battle' ? { countries: s.countries.filter((c) => castIds.includes(c)) } : {}),
       ...(s.type === 'dialogue' ? { setting: s.setting } : {}),
-      lines: s.lines.map((l) => ({ speaker: l.speaker, text: l.text.trim(), ...(l.expression ? { expression: l.expression } : {}) })),
+      lines: s.lines.map((l) => ({
+        speaker: l.speaker,
+        text: l.text.trim(),
+        ...(l.expression ? { expression: l.expression } : {}),
+        ...(l.prop && l.speaker !== 'narrator' ? { prop: l.prop } : {}),
+      })),
     })),
     ...(form.description.trim() ? { description: form.description.trim() } : {}),
     tags: form.tags
@@ -334,8 +382,11 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
         <div className="card-header">
           <span className="card-title">New Countryballs video</span>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button type="button" className="btn-secondary" onClick={loadExample} style={{ fontSize: '12px' }}>
+            <button type="button" className="btn-secondary" onClick={() => loadExample(EXAMPLE)} style={{ fontSize: '12px' }}>
               Load example
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => loadExample(ROAST_EXAMPLE)} style={{ fontSize: '12px' }}>
+              Load roast example
             </button>
           </div>
         </div>
@@ -541,6 +592,31 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
                   </div>
                 )}
 
+                {s.type === 'roast-battle' && (
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px', fontSize: '13px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>The two countries (exactly 2):</span>
+                    {castIds.map((id) => (
+                      <label key={id} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={s.countries.includes(id)}
+                          disabled={!s.countries.includes(id) && s.countries.length >= 2}
+                          onChange={() => toggleSceneCountry(si, id)}
+                        />
+                        {countryName(id)}
+                      </label>
+                    ))}
+                    <input
+                      className="form-control"
+                      style={{ flex: 1, minWidth: '180px' }}
+                      placeholder="Title on screen (optional, e.g. Italy vs France)"
+                      maxLength={options.limits.sceneTitleChars}
+                      value={s.title}
+                      onChange={(e) => updateScene(si, { title: e.target.value })}
+                    />
+                  </div>
+                )}
+
                 {(s.type === 'map-focus' || s.type === 'dialogue') && (
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px', fontSize: '13px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>{s.type === 'map-focus' ? 'Countries (2-4):' : 'On screen (1-3):'}</span>
@@ -564,9 +640,12 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {s.lines.map((l, li) => {
-                    const speakers = ['narrator', ...(s.type === 'dialogue' ? s.countries.filter((c) => castIds.includes(c)) : castIds)];
+                    const speakers = [
+                      'narrator',
+                      ...(s.type === 'dialogue' || s.type === 'roast-battle' ? s.countries.filter((c) => castIds.includes(c)) : castIds),
+                    ];
                     return (
-                      <div key={li} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 120px auto', gap: '6px', alignItems: 'center' }}>
+                      <div key={li} style={{ display: 'grid', gridTemplateColumns: '108px minmax(0, 1fr) 100px 100px 40px', gap: '6px', alignItems: 'center' }}>
                         <select className="form-control" value={l.speaker} onChange={(e) => updateLine(si, li, { speaker: e.target.value })}>
                           {speakers.map((sp) => (
                             <option key={sp} value={sp}>
@@ -608,6 +687,20 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
                           {options.expressions.map((x) => (
                             <option key={x} value={x}>
                               {x}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="form-control"
+                          value={l.prop}
+                          disabled={l.speaker === 'narrator' || !options.props}
+                          onChange={(e) => updateLine(si, li, { prop: e.target.value })}
+                          title="Prop shown on the speaker from this line (crown and trophy stay to the end of the scene)"
+                        >
+                          <option value="">Prop…</option>
+                          {(options.props ?? []).map((x) => (
+                            <option key={x} value={x}>
+                              {PROP_LABELS[x] ?? x}
                             </option>
                           ))}
                         </select>

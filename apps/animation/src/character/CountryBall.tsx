@@ -2,6 +2,7 @@ import React from 'react';
 import { random } from 'remotion';
 import { blendEye, EXPRESSIONS, Expression, eyePath } from './expressions';
 import type { FlagSpec } from '../engine/types';
+import { Flag } from './flags';
 
 export type { FlagSpec };
 
@@ -59,54 +60,6 @@ export function blinkAmount(frame: number, fps: number, seed: string): number {
   return 0;
 }
 
-const Flag: React.FC<{ r: number; flag: FlagSpec }> = ({ r, flag }) => {
-  const size = r * 2;
-  if (flag.layout === 'nordic-cross') {
-    // Cross offset towards the hoist, as on Nordic flags. Proportions are approximate.
-    const cx = -r * 0.28;
-    const w = r * 0.3;
-    const b = flag.border ? r * 0.12 : 0;
-    return (
-      <>
-        <rect x={-r} y={-r} width={size} height={size} fill={flag.field} />
-        {flag.border ? (
-          <>
-            <rect x={cx - w / 2 - b} y={-r} width={w + 2 * b} height={size} fill={flag.border} />
-            <rect x={-r} y={-w / 2 - b} width={size} height={w + 2 * b} fill={flag.border} />
-          </>
-        ) : null}
-        <rect x={cx - w / 2} y={-r} width={w} height={size} fill={flag.cross} />
-        <rect x={-r} y={-w / 2} width={size} height={w} fill={flag.cross} />
-      </>
-    );
-  }
-  if (flag.layout === 'disc') {
-    return (
-      <>
-        <rect x={-r} y={-r} width={size} height={size} fill={flag.field} />
-        <circle cx={0} cy={r * 0.08} r={r * 0.42} fill={flag.disc} />
-      </>
-    );
-  }
-  const n = flag.colors.length;
-  if (flag.layout === 'h-stripes') {
-    return (
-      <>
-        {flag.colors.map((c, i) => (
-          <rect key={i} x={-r} y={-r + (size / n) * i} width={size} height={size / n + 0.5} fill={c} />
-        ))}
-      </>
-    );
-  }
-  return (
-    <>
-      {flag.colors.map((c, i) => (
-        <rect key={i} x={-r + (size / n) * i} y={-r} width={size / n + 0.5} height={size} fill={c} />
-      ))}
-    </>
-  );
-};
-
 export const CountryBall: React.FC<CountryBallProps> = (p) => {
   const r = p.radius;
   const s = Math.max(-0.6, Math.min(0.6, p.squash));
@@ -149,7 +102,10 @@ export const CountryBall: React.FC<CountryBallProps> = (p) => {
           </radialGradient>
         </defs>
         <g clipPath={`url(#${clipId})`}>
-          <Flag r={r} flag={p.flag} />
+          {/* counter the facing flip so flags never read mirrored (eyes still turn) */}
+          <g transform={p.facing === -1 ? 'scale(-1 1)' : undefined}>
+            <Flag r={r} flag={p.flag} uid={p.id} />
+          </g>
           <circle r={r} fill={`url(#${shadeId})`} />
         </g>
         <circle r={r} fill="none" stroke="#141414" strokeWidth={outline} />

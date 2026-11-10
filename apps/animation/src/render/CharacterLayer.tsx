@@ -1,5 +1,6 @@
 import React from 'react';
 import { CountryBall } from '../character/CountryBall';
+import { BEHIND, Prop } from '../character/props';
 import { EASE, stepTrack, track } from '../lib/anim';
 import type { CharacterDefinition, CharacterInScene, NumberKey } from '../engine/types';
 
@@ -128,9 +129,16 @@ export const CharacterLayer: React.FC<{
   const expr = stepTrack(frame, c.expressions, 5);
   const cx = gx + dx;
   const cy = gy - r; // CountryBall takes the ball centre; ground contact is one radius below.
+  const activeProps = (c.props ?? []).filter((p) => frame >= p.from && frame < p.to);
+  const facing = c.facing ?? 1;
+  const drawProps = (behind: boolean) =>
+    activeProps
+      .filter((p) => BEHIND.includes(p.kind) === behind)
+      .map((p, i) => <Prop key={`${p.kind}-${i}`} kind={p.kind} cx={cx} cy={cy - lift} r={r} age={frame - p.from} frame={frame} facing={facing} />);
 
   return (
     <g transform={`translate(${cx} ${gy}) scale(${Math.max(0, scale)}) translate(${-cx} ${-gy})`}>
+      {drawProps(true)}
       <CountryBall
         id={uid}
         frame={frame}
@@ -152,6 +160,7 @@ export const CharacterLayer: React.FC<{
         name={c.showName ? def.name : undefined}
         nameColor={def.accent}
       />
+      {drawProps(false)}
     </g>
   );
 };

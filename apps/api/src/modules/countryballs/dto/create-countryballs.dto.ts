@@ -23,6 +23,8 @@ import {
   EXPRESSIONS,
   ExpressionId,
   LIMITS,
+  PROPS,
+  PropId,
   SCENE_TYPES,
   SceneType,
   VOICES,
@@ -68,6 +70,11 @@ export class CountryballsLineDto {
   @IsOptional()
   @IsIn(EXPRESSIONS as unknown as string[])
   expression?: ExpressionId;
+
+  @ApiPropertyOptional({ enum: PROPS, description: 'Prop shown on the speaker from this line (e.g. crown on the winning line)' })
+  @IsOptional()
+  @IsIn(PROPS as unknown as string[])
+  prop?: PropId;
 }
 
 export class CountryballsSceneDto {
@@ -75,7 +82,7 @@ export class CountryballsSceneDto {
   @IsIn(SCENE_TYPES as unknown as string[])
   type!: SceneType;
 
-  @ApiPropertyOptional({ description: 'title-card (required) and map-intro (optional)', maxLength: LIMITS.sceneTitleChars })
+  @ApiPropertyOptional({ description: 'title-card, map-intro and roast-battle (optional)', maxLength: LIMITS.sceneTitleChars })
   @IsOptional()
   @IsString()
   @MaxLength(LIMITS.sceneTitleChars)
@@ -92,7 +99,7 @@ export class CountryballsSceneDto {
   @IsIn(COUNTRY_IDS as unknown as string[])
   country?: CountryId;
 
-  @ApiPropertyOptional({ enum: COUNTRY_IDS, isArray: true, description: 'map-focus: 2-4 countries; dialogue: 1-3' })
+  @ApiPropertyOptional({ enum: COUNTRY_IDS, isArray: true, description: 'map-focus: 2-4 countries; dialogue: 1-3; roast-battle: exactly 2' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(4)

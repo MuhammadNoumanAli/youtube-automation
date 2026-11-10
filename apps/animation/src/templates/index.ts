@@ -32,6 +32,7 @@ function linesOf(spec: SceneSpec, firstAt: number): DialogueLine[] {
     text: l.text,
     ...(i === 0 ? { at: firstAt } : {}),
     ...(l.expression ? { expression: l.expression } : {}),
+    ...(l.prop ? { prop: l.prop } : {}),
   }));
 }
 
@@ -256,6 +257,89 @@ function dialogue(spec: Extract<SceneSpec, { template: 'dialogue' }>, ctx: Templ
   };
 }
 
+// ------------------------------------------------------------------ roast battle: two countries face off on a close-up map
+
+/**
+ * Camera and rest positions for two countries: both countries' centres fit with a margin, never zoomed in further
+ * than the closer country's own framing, and the two balls are kept at least ~2.6 radii apart on screen.
+ */
+export function layoutRoast(a: { lon: number; lat: number; scale: number }, b: { lon: number; lat: number; scale: number }, width: number, height: number, radius: number) {
+  const vertical = height > width;
+  const xs = [mx(a.lon), mx(b.lon)];
+  const ys = [my(a.lat), my(b.lat)];
+  const spanX = Math.abs(xs[1] - xs[0]) || 1e-3;
+  const spanY = Math.abs(ys[1] - ys[0]) || 1e-3;
+  const fit = Math.min((width * (vertical ? 0.52 : 0.48)) / spanX, (height * (vertical ? 0.3 : 0.42)) / spanY);
+  const scale = Math.max(250, Math.min(fit, Math.min(a.scale, b.scale) * (vertical ? 1.35 : 1.1), 9000));
+  const cx = (xs[0] + xs[1]) / 2;
+  // In 9:16 sit the pair slightly below centre: the speech bubbles go in the space above them.
+  const cy = (ys[0] + ys[1]) / 2 - (vertical ? (height * 0.06) / scale : 0);
+  const pos = [0, 1].map((i) => ({ x: (xs[i] - cx) * scale, y: (ys[i] - cy) * scale }));
+  const d = Math.hypot(pos[1].x - pos[0].x, pos[1].y - pos[0].y);
+  const minDist = radius * 2.6;
+  if (d < minDist) {
+    const ux = d > 1e-6 ? (pos[1].x - pos[0].x) / d : 1;
+    const uy = d > 1e-6 ? (pos[1].y - pos[0].y) / d : 0;
+    const push = (minDist - d) / 2;
+    pos[0].x -= ux * push;
+    pos[0].y -= uy * push;
+    pos[1].x += ux * push;
+    pos[1].y += uy * push;
+  }
+  return {
+    camera: { lon: (cx * 180) / Math.PI, lat: unLat(cy), scale },
+    homes: pos.map((p) => ({ lon: ((cx + p.x / scale) * 180) / Math.PI, lat: unLat(cy + p.y / scale) })),
+    /** Screen x of each ball relative to the frame centre (decides who faces which way). */
+    screenX: pos.map((p) => p.x),
+  };
+}
+
+function roastBattle(spec: Extract<SceneSpec, { template: 'roast-battle' }>, ctx: TemplateContext): BuiltScene {
+  const u = unit(ctx);
+  const duration = 150;
+  const radius = Math.round((ctx.height > ctx.width ? 120 : 112) * u);
+  const [a, b] = spec.countries;
+  const { camera, homes, screenX } = layoutRoast(COUNTRY_GEO[a], COUNTRY_GEO[b], ctx.width, ctx.height, radius);
+  const fills = distinctFills([ctx.characters[a].accent, ctx.characters[b].accent]);
+  const facing = (i: number): 1 | -1 => (screenX[i] <= screenX[1 - i] ? 1 : -1);
+  const title = spec.title ?? `${ctx.characters[a].name} vs ${ctx.characters[b].name}`;
+  return {
+    scene: {
+      id: spec.id,
+      title,
+      durationInFrames: duration,
+      background: {
+        type: 'worldMap',
+        camera: {
+          lon: [k(0, camera.lon)],
+          lat: [k(0, camera.lat)],
+          scale: [k(0, camera.scale * 0.93), k(40, camera.scale, 'outCubic'), k(100000, camera.scale * 1.08, 'linear')],
+        },
+        highlights: [
+          { countryId: COUNTRY_GEO[a].iso, color: fills[0], from: 0, fadeIn: 14 },
+          { countryId: COUNTRY_GEO[b].iso, color: fills[1], from: 6, fadeIn: 14 },
+        ],
+      },
+      elements: spec.title ? [{ type: 'title', text: spec.title, from: 4, to: 70, y: Math.round(ctx.height * (ctx.height > ctx.width ? 0.1 : 0.06)) }] : [],
+      characters: [a, b].map((id, i) => ({
+        ref: id,
+        position: { space: 'geo' as const, lon: [k(0, homes[i].lon)], lat: [k(0, homes[i].lat)] },
+        radius,
+        facing: facing(i),
+        enter: { type: 'pop' as const, frame: 6 + i * 8, duration: 14 },
+        expressions: [{ frame: 0, value: 'determined' as const }],
+        lookX: [k(0, 0.6)],
+        showName: false,
+        blinkSeed: `${spec.id}-${id}`,
+      })),
+      captions: [],
+      captionStyle: 'speech',
+      choreography: { kind: 'roast', home: { [a]: homes[0], [b]: homes[1] } },
+    },
+    lines: linesOf(spec, 24),
+  };
+}
+
 export function buildScene(spec: SceneSpec, ctx: TemplateContext): BuiltScene {
   switch (spec.template) {
     case 'title-card':
@@ -266,5 +350,7 @@ export function buildScene(spec: SceneSpec, ctx: TemplateContext): BuiltScene {
       return mapFocus(spec, ctx);
     case 'dialogue':
       return dialogue(spec, ctx);
+    case 'roast-battle':
+      return roastBattle(spec, ctx);
   }
 }

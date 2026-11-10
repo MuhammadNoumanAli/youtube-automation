@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "RoastSample",
+  "title": "Italy vs France",
+  "format": "9:16",
+  "narrator": { "voice": { "engine": "kokoro", "voice": "am_michael" } },
+  "cast": [
+    { "id": "italy", "voice": { "engine": "kokoro", "voice": "am_puck" } },
+    { "id": "france", "voice": { "engine": "kokoro", "voice": "am_adam" } }
+  ],
+  "scenes": [
+    {
+      "template": "roast-battle",
+      "id": "roast",
+      "countries": ["italy", "france"],
+      "title": "Italy vs France",
+      "lines": [
+        { "id": "r1", "speaker": "italy", "text": "You call that a croissant? It's just butter with confidence.", "expression": "angry" },
+        { "id": "r2", "speaker": "france", "text": "Says the country that argues about pineapple for fun.", "expression": "determined" },
+        { "id": "r3", "speaker": "italy", "text": "Pineapple on pizza is a crime, not a debate!", "expression": "surprised", "prop": "sweat" },
+        { "id": "r4", "speaker": "france", "text": "My cheese has more varieties than your excuses.", "expression": "happy", "prop": "sparkles" },
+        { "id": "r5", "speaker": "italy", "text": "Then let's settle it. Who makes the better pasta?", "expression": "determined", "prop": "fire" },
+        { "id": "r6", "speaker": "france", "text": "...Fine. You win this one.", "expression": "sad", "prop": "tears" },
+        { "id": "r7", "speaker": "italy", "text": "Grazie. The crown stays in Rome.", "expression": "happy", "prop": "crown" },
+        { "id": "r8", "speaker": "narrator", "text": "Next time: who makes the better coffee?" }
+      ]
+    }
+  ]
+}

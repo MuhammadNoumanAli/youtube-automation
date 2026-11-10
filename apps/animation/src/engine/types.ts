@@ -26,11 +26,48 @@ export interface ExpressionKey {
 
 // ---------------------------------------------------------------- characters
 
+/** A simple symbol drawn on top of a flag. x/y/size are relative to the ball radius (0 = centre). */
+export interface Emblem {
+  kind:
+    | 'disc'
+    | 'ring'
+    | 'star'
+    | 'crescent-star'
+    | 'maple'
+    | 'wheel'
+    | 'sun'
+    | 'star-grid'
+    | 'star-cluster'
+    | 'hexagram'
+    | 'pentagram-outline'
+    | 'taeguk'
+    | 'checker'
+    | 'cross';
+  color: string;
+  color2?: string;
+  x?: number;
+  y?: number;
+  size?: number;
+  rows?: number;
+  cols?: number;
+}
+
+/**
+ * Flag designs: original, simplified geometric drawings. Coats of arms and any text are left out on purpose.
+ * `weights` give relative band sizes (default equal).
+ */
 export type FlagSpec =
-  | { layout: 'h-stripes'; colors: string[] }
-  | { layout: 'v-stripes'; colors: string[] }
+  | { layout: 'h-stripes'; colors: string[]; weights?: number[]; emblem?: Emblem }
+  | { layout: 'v-stripes'; colors: string[]; weights?: number[]; emblem?: Emblem }
   | { layout: 'nordic-cross'; field: string; cross: string; border?: string }
-  | { layout: 'disc'; field: string; disc: string };
+  | { layout: 'disc'; field: string; disc: string }
+  | { layout: 'cross'; field: string; cross: string; arm?: number; emblem?: Emblem }
+  | { layout: 'union' }
+  | { layout: 'union-canton'; field: string; emblem?: Emblem }
+  | { layout: 'canton-stripes'; stripes: string[]; count: number; canton: string; cantonW: number; cantonH: number; emblem?: Emblem }
+  | { layout: 'hoist-triangle'; colors: string[]; weights?: number[]; triangle: string; depth: number; emblem?: Emblem }
+  | { layout: 'hoist-band'; band: string; bandWidth: number; colors: string[]; weights?: number[] }
+  | { layout: 'diamond'; field: string; diamond: string; disc: string };
 
 /** A reusable character: identity and look. Lives in the character library, not in scenes. */
 export interface CharacterDefinition {
@@ -62,6 +99,10 @@ export interface TalkSegment {
   rate: number;
 }
 
+/** Props drawn on a character (original drawings in src/character/props.tsx). */
+export type PropKind = 'crown' | 'trophy' | 'sweat' | 'anger' | 'fire' | 'tears' | 'ice' | 'sparkles';
+export const PROP_KINDS: readonly PropKind[] = ['crown', 'trophy', 'sweat', 'anger', 'fire', 'tears', 'ice', 'sparkles'];
+
 export interface CharacterInScene {
   /** Id of a CharacterDefinition. */
   ref: string;
@@ -90,6 +131,8 @@ export interface CharacterInScene {
   blinkSeed?: string;
   /** Speech segments (normally generated from the voice manifest by applyVoiceTiming). */
   talk?: TalkSegment[];
+  /** Props shown on the character between two frames (placed at measured line times by applyVoiceTiming). */
+  props?: { kind: PropKind; from: number; to: number }[];
 }
 
 // ---------------------------------------------------------------- backgrounds
@@ -153,6 +196,20 @@ export interface Caption {
   text: string;
   /** Character id; omitted for narration. */
   speaker?: string;
+  /** 'speech': a bubble next to the speaking character that types out (roast battles). Default: bottom caption. */
+  style?: 'speech';
+}
+
+/**
+ * Line-driven motion, applied by applyVoiceTiming once real line times are known.
+ * 'roast': the speaker lunges towards the other character while talking and settles back; the listener flinches.
+ */
+export interface Choreography {
+  kind: 'roast';
+  /** Rest position of each character (geo), keyed by character id. */
+  home: Record<string, { lon: number; lat: number }>;
+  /** 0..1 of the distance between the two characters to lunge (default 0.18). */
+  lunge?: number;
 }
 
 export interface StageCamera {
@@ -175,6 +232,9 @@ export interface SceneConfig {
   camera?: StageCamera;
   /** Overlaps the start of the next scene by `durationInFrames`. */
   transitionOut?: { type: TransitionType; durationInFrames: number };
+  /** Character lines become speech bubbles next to the speaker instead of bottom captions. */
+  captionStyle?: 'speech';
+  choreography?: Choreography;
 }
 
 export interface VideoConfig {

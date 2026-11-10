@@ -68,4 +68,53 @@ describe('countryballs spec builder', () => {
       expect.arrayContaining(['spec id invalid', 'spec format invalid', 'spec has no scenes']),
     );
   });
+
+  it('builds a roast-battle scene with props, and rejects bad pairs and narrator props', () => {
+    const form = sampleForm({
+      cast: [{ country: 'italy' }, { country: 'france' }, { country: 'spain' }] as any,
+      scenes: [
+        {
+          type: 'roast-battle',
+          countries: ['italy', 'france'],
+          title: 'Italy vs France',
+          lines: [
+            { speaker: 'italy', text: 'You call that a croissant?', expression: 'angry' },
+            { speaker: 'france', text: 'Fine. You win.', prop: 'tears' },
+            { speaker: 'italy', text: 'The crown stays in Rome.', prop: 'crown' },
+          ],
+        } as any,
+      ],
+    });
+    const spec = buildSpec(form, 'cb-roast1', '9:16');
+    expect(spec.scenes[0]).toEqual({
+      template: 'roast-battle',
+      id: 's1',
+      countries: ['italy', 'france'],
+      title: 'Italy vs France',
+      lines: [
+        { id: 's1-l1', speaker: 'italy', text: 'You call that a croissant?', expression: 'angry' },
+        { id: 's1-l2', speaker: 'france', text: 'Fine. You win.', prop: 'tears' },
+        { id: 's1-l3', speaker: 'italy', text: 'The crown stays in Rome.', prop: 'crown' },
+      ],
+    });
+    expect(readableScript(spec)).toContain('Roast battle: Italy vs France');
+    expect(readableScript(spec)).toContain('Italy [crown]: The crown stays in Rome.');
+
+    const bad = sampleForm({
+      cast: [{ country: 'italy' }, { country: 'france' }, { country: 'spain' }] as any,
+      scenes: [
+        {
+          type: 'roast-battle',
+          countries: ['italy', 'italy'],
+          lines: [
+            { speaker: 'spain', text: 'Hola' },
+            { speaker: 'narrator', text: 'Meanwhile', prop: 'crown' },
+          ],
+        } as any,
+      ],
+    });
+    expect(() => buildSpec(bad, 'cb-x', '16:9')).toThrow(/exactly 2 different countries/);
+    expect(() => buildSpec(bad, 'cb-x', '16:9')).toThrow(/Spain is not one of the two countries/);
+    expect(() => buildSpec(bad, 'cb-x', '16:9')).toThrow(/narrator cannot hold a prop/);
+  });
 });
