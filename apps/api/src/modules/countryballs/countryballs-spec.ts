@@ -20,6 +20,7 @@ export interface SpecLine {
   text: string;
   expression?: string;
   prop?: string;
+  move?: string;
 }
 
 export type SpecScene =
@@ -76,6 +77,7 @@ export function buildSpec(dto: CreateCountryballsDto, specId: string, format: Sp
         text,
         ...(l.expression ? { expression: l.expression } : {}),
         ...(l.prop ? { prop: l.prop } : {}),
+        ...(l.move && l.move !== 'auto' && s.type === 'roast-battle' ? { move: l.move } : {}),
       };
     });
     const onStage = (ids: string[]) => {

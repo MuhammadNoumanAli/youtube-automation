@@ -91,6 +91,10 @@ export type SceneType = (typeof SCENE_TYPES)[number];
 export const PROPS = ['crown', 'trophy', 'sweat', 'anger', 'fire', 'tears', 'ice', 'sparkles'] as const;
 export type PropId = (typeof PROPS)[number];
 
+/** Roast-battle moves per line. 'auto' picks from the expression and prop (crown -> hop, sad -> deflate, angry -> charge). */
+export const MOVES = ['auto', 'lean', 'charge', 'hop', 'deflate', 'none'] as const;
+export type MoveId = (typeof MOVES)[number];
+
 export const DIALOGUE_SETTINGS = ['countryside', 'plain', 'coast'] as const;
 export type DialogueSetting = (typeof DIALOGUE_SETTINGS)[number];
 

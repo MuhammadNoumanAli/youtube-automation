@@ -16,6 +16,7 @@ import {
   DIALOGUE_SETTINGS,
   EXPRESSIONS,
   LIMITS,
+  MOVES,
   PROPS,
   SCENE_TYPES,
   VOICES,
@@ -73,6 +74,7 @@ export class CountryballsService {
       default_narrator_voice: DEFAULT_NARRATOR_VOICE,
       expressions: EXPRESSIONS,
       props: PROPS,
+      moves: MOVES,
       scene_types: SCENE_TYPES,
       dialogue_settings: DIALOGUE_SETTINGS,
       formats: [

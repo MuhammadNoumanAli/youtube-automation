@@ -162,3 +162,63 @@ test('roast layout keeps the balls apart on screen even for tiny neighbours (bot
       assert.ok(camera.scale >= 250 && camera.scale <= 9000);
     }
 });
+
+test('moves: auto picks charge/hop/deflate/lean; charges bump the other ball with flash, burst and punch sound', () => {
+  const spec = clone(roast);
+  spec.scenes[0].lines = [
+    { id: 'm1', speaker: 'italy', text: 'Charge line.', expression: 'angry' },
+    { id: 'm2', speaker: 'france', text: 'Sad line.', expression: 'sad' },
+    { id: 'm3', speaker: 'italy', text: 'Winner line.', prop: 'crown' },
+    { id: 'm4', speaker: 'france', text: 'Plain line.', move: 'none' },
+    { id: 'm5', speaker: 'italy', text: 'Forced lean.', expression: 'angry', move: 'lean' },
+  ];
+  const built = eng.buildFromSpec(spec, '9:16');
+  assert.deepEqual(built.problems, []);
+  const t = eng.applyVoiceTiming(built.video, built.script, manifestFor(spec));
+  const scene = t.video.scenes[0];
+  const at = Object.fromEntries(t.lines.map((l) => [l.id, l]));
+  const [it, fr] = scene.characters;
+  // charge (m1): France is hit -> impact, flash, burst, whoosh + punch
+  const hit = at.m1.startFrame + 8;
+  assert.ok(fr.impacts.includes(hit));
+  assert.ok(scene.flashes.includes(hit));
+  assert.equal(scene.bursts[0].ref, 'france');
+  assert.ok(scene.sfxCues.some((c) => c.kind === 'whoosh' && c.frame === at.m1.startFrame));
+  assert.ok(scene.sfxCues.some((c) => c.kind === 'punch' && c.frame === hit));
+  // deflate (m2): France shrinks; sad sound
+  assert.ok(fr.scale.some((k) => k.value < 0.9 && k.frame > at.m2.startFrame));
+  assert.ok(scene.sfxCues.some((c) => c.kind === 'sad' && c.frame === at.m2.startFrame));
+  // hop (m3): Italy hops; boing + ding for the crown
+  assert.ok(it.hops.some((h) => h.from === at.m3.startFrame));
+  assert.ok(scene.sfxCues.some((c) => c.kind === 'boing') && scene.sfxCues.some((c) => c.kind === 'ding'));
+  // only one charge in total (m5 forced to lean, m4 none)
+  assert.equal(scene.flashes.length, 1);
+  // tracks stay ordered and the camera keys too
+  for (const keys of [it.position.lon, fr.position.lon, scene.background.camera.scale, scene.background.camera.lon])
+    assert.ok(keys.every((k, i, a) => i === 0 || k.frame > a[i - 1].frame));
+});
+
+test('unknown move is rejected; moves never change the audio', () => {
+  const bad = clone(roast);
+  bad.scenes[0].lines[0].move = 'backflip';
+  assert.match(eng.buildFromSpec(bad).problems.join('\n'), /unknown move "backflip"/);
+  const moved = clone(roast);
+  moved.scenes[0].lines[0].move = 'hop';
+  assert.equal(scriptHash(voiceScriptFromSpec(moved)), scriptHash(voiceScriptFromSpec(roast)));
+});
+
+test('sound-effect kit: original, deterministic, every kind written as a valid WAV', async () => {
+  const { writeSfxKit, SFX_KINDS } = await import('../sfx.mjs');
+  const { readWavInfo } = await import('../wav.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sfx-'));
+  const a = writeSfxKit(dir);
+  const first = Object.fromEntries(SFX_KINDS.map((k) => [k, fs.readFileSync(path.join(dir, a.files[k]))]));
+  const b = writeSfxKit(dir);
+  assert.deepEqual(Object.keys(b.files).sort(), [...SFX_KINDS].sort());
+  for (const k of SFX_KINDS) {
+    assert.ok(fs.readFileSync(path.join(dir, b.files[k])).equals(first[k]), `${k} not deterministic`);
+    const info = readWavInfo(path.join(dir, b.files[k]));
+    assert.ok(info.durationMs > 50 && info.durationMs < 2000, `${k}: ${info.durationMs} ms`);
+  }
+  assert.match(a.license, /Original/);
+});

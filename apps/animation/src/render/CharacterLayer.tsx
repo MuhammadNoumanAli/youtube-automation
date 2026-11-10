@@ -70,8 +70,18 @@ export const CharacterLayer: React.FC<{
     squash -= level * 0.07; // negative = taller and narrower
   }
 
+  // ---- impacts: hit squash that wobbles out, plus a tilt away from the hit
+  let impactTilt = 0;
+  for (const f0 of c.impacts ?? []) {
+    const d = frame - f0;
+    if (d < 0 || d >= 16) continue;
+    const t = d / 16;
+    squash += 0.38 * (1 - t) * Math.cos(t * Math.PI * 3);
+    impactTilt += -(c.facing ?? 1) * 14 * (1 - t) * Math.sin(t * Math.PI * 2 + 0.6);
+  }
+
   // ---- rotation and shakes
-  let rotation = val(frame, c.rotation, 0);
+  let rotation = val(frame, c.rotation, 0) + impactTilt;
   for (const s of c.shakes ?? []) {
     if (frame >= s.from && frame <= s.to) rotation += Math.sin(frame * 1.9) * s.degrees;
   }

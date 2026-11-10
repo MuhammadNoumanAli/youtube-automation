@@ -80,11 +80,12 @@ describe('countryballs spec builder', () => {
           lines: [
             { speaker: 'italy', text: 'You call that a croissant?', expression: 'angry' },
             { speaker: 'france', text: 'Fine. You win.', prop: 'tears' },
-            { speaker: 'italy', text: 'The crown stays in Rome.', prop: 'crown' },
+            { speaker: 'italy', text: 'The crown stays in Rome.', prop: 'crown', move: 'auto' },
           ],
         } as any,
       ],
     });
+    (form.scenes[0].lines[0] as any).move = 'charge';
     const spec = buildSpec(form, 'cb-roast1', '9:16');
     expect(spec.scenes[0]).toEqual({
       template: 'roast-battle',
@@ -92,7 +93,7 @@ describe('countryballs spec builder', () => {
       countries: ['italy', 'france'],
       title: 'Italy vs France',
       lines: [
-        { id: 's1-l1', speaker: 'italy', text: 'You call that a croissant?', expression: 'angry' },
+        { id: 's1-l1', speaker: 'italy', text: 'You call that a croissant?', expression: 'angry', move: 'charge' },
         { id: 's1-l2', speaker: 'france', text: 'Fine. You win.', prop: 'tears' },
         { id: 's1-l3', speaker: 'italy', text: 'The crown stays in Rome.', prop: 'crown' },
       ],

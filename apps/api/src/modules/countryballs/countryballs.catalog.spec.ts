@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { COUNTRY_IDS, EXPRESSIONS, PROPS, SCENE_TYPES, VOICES } from './countryballs.catalog';
+import { COUNTRY_IDS, EXPRESSIONS, MOVES, PROPS, SCENE_TYPES, VOICES } from './countryballs.catalog';
 
 /**
  * Keeps the form's lists in step with the animation app. Runs when apps/animation sits next to apps/api (the normal
@@ -33,6 +33,8 @@ const read = (rel: string) => fs.readFileSync(path.join(appDir, rel), 'utf8');
     const types = read('src/engine/types.ts');
     const propLine = types.split('\n').find((l) => l.includes('export const PROP_KINDS')) ?? '';
     for (const p of PROPS) expect(propLine).toContain(`'${p}'`);
+    const moveLine = types.split('\n').find((l) => l.includes('export const MOVE_KINDS')) ?? '';
+    for (const m of MOVES) expect(moveLine).toContain(`'${m}'`);
     const characters = read('src/engine/characters.ts');
     const animIds = [...characters.matchAll(/\n\s+([a-z_]+): \{\s*(?:\n\s*)?id: '/g)].map((m) => m[1]);
     expect(animIds.length).toBeGreaterThanOrEqual(60);

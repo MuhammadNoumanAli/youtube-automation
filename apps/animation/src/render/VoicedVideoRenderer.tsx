@@ -34,6 +34,17 @@ export const VoicedVideoRenderer: React.FC<{ video: VideoConfig; lines: PlacedLi
           <Html5Audio src={staticFile(plan.music.file)} loop volume={(f) => musicVolumeAt(f, plan.music!)} />
         </Sequence>
       ) : null}
+      {manifest?.sfxKit
+        ? video.scenes.flatMap((scene) =>
+            (scene.sfxCues ?? [])
+              .filter((cue) => manifest.sfxKit!.files[cue.kind] && cue.frame < scene.durationInFrames)
+              .map((cue, i) => (
+                <Sequence key={`cue-${scene.id}-${i}`} from={sceneStart[scene.id] + cue.frame} name={`sfx ${cue.kind}`} layout="none">
+                  <Html5Audio src={staticFile(manifest.sfxKit!.files[cue.kind]!)} volume={cue.volume ?? 0.6} />
+                </Sequence>
+              )),
+          )
+        : null}
       {plan.sfx.map((s, i) => (
         <Sequence key={`${s.id}-${i}`} from={s.from} name={`sfx ${s.id}`} layout="none">
           <Html5Audio src={staticFile(s.file)} volume={s.volume} />

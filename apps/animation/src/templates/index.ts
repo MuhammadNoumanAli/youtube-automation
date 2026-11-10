@@ -33,6 +33,7 @@ function linesOf(spec: SceneSpec, firstAt: number): DialogueLine[] {
     ...(i === 0 ? { at: firstAt } : {}),
     ...(l.expression ? { expression: l.expression } : {}),
     ...(l.prop ? { prop: l.prop } : {}),
+    ...(l.move ? { move: l.move } : {}),
   }));
 }
 
@@ -269,7 +270,8 @@ export function layoutRoast(a: { lon: number; lat: number; scale: number }, b: {
   const ys = [my(a.lat), my(b.lat)];
   const spanX = Math.abs(xs[1] - xs[0]) || 1e-3;
   const spanY = Math.abs(ys[1] - ys[0]) || 1e-3;
-  const fit = Math.min((width * (vertical ? 0.52 : 0.48)) / spanX, (height * (vertical ? 0.3 : 0.42)) / spanY);
+  // Leave room at the sides for the balls themselves (and their lunges and knock-backs), not just their centres.
+  const fit = Math.min(Math.max(width * 0.3, width - radius * (vertical ? 4.4 : 5)) / spanX, (height * (vertical ? 0.3 : 0.42)) / spanY);
   const scale = Math.max(250, Math.min(fit, Math.min(a.scale, b.scale) * (vertical ? 1.35 : 1.1), 9000));
   const cx = (xs[0] + xs[1]) / 2;
   // In 9:16 sit the pair slightly below centre: the speech bubbles go in the space above them.
@@ -297,7 +299,7 @@ export function layoutRoast(a: { lon: number; lat: number; scale: number }, b: {
 function roastBattle(spec: Extract<SceneSpec, { template: 'roast-battle' }>, ctx: TemplateContext): BuiltScene {
   const u = unit(ctx);
   const duration = 150;
-  const radius = Math.round((ctx.height > ctx.width ? 120 : 112) * u);
+  const radius = Math.round((ctx.height > ctx.width ? 150 : 125) * u);
   const [a, b] = spec.countries;
   const { camera, homes, screenX } = layoutRoast(COUNTRY_GEO[a], COUNTRY_GEO[b], ctx.width, ctx.height, radius);
   const fills = distinctFills([ctx.characters[a].accent, ctx.characters[b].accent]);
@@ -319,6 +321,7 @@ function roastBattle(spec: Extract<SceneSpec, { template: 'roast-battle' }>, ctx
           { countryId: COUNTRY_GEO[a].iso, color: fills[0], from: 0, fadeIn: 14 },
           { countryId: COUNTRY_GEO[b].iso, color: fills[1], from: 6, fadeIn: 14 },
         ],
+        fillAll: true,
       },
       elements: spec.title ? [{ type: 'title', text: spec.title, from: 4, to: 70, y: Math.round(ctx.height * (ctx.height > ctx.width ? 0.1 : 0.06)) }] : [],
       characters: [a, b].map((id, i) => ({

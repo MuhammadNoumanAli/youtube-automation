@@ -27,6 +27,7 @@ import { readWavInfo } from './wav.mjs';
 import { computeEnvelope, ENVELOPE_RATE } from './envelope.mjs';
 import { loadLibrary, prepareAssets } from './library.mjs';
 import { voiceScriptFromSpec } from './spec.mjs';
+import { writeSfxKit } from './sfx.mjs';
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -247,6 +248,8 @@ export async function generateVoice({ script, scriptFile = null, source = null, 
   const library = loadLibrary(cfg.libraryFile ?? path.join(moduleRoot, 'src', 'audio-library.json'));
   const { assets, problems: assetProblems, attributions: assetAttributions } = prepareAssets({ script, library, publicDir });
   for (const p of assetProblems) log(`  REFUSED ${p}`);
+  // Original synthesised sound effects (roast battles use them at the real line times); see voice/sfx.mjs.
+  const sfxKit = writeSfxKit(publicDir);
 
   const ok = lines.filter((l) => !l.error);
   const manifest = {
@@ -262,6 +265,7 @@ export async function generateVoice({ script, scriptFile = null, source = null, 
     complete: ok.length === lines.length && assetProblems.length === 0,
     lines,
     assets,
+    sfxKit,
     assetProblems,
     attributions: [...new Set([...ok.filter((l) => l.requiresAttribution).map((l) => l.attribution), ...assetAttributions])],
     credits: [...new Set(ok.map((l) => l.attribution))],

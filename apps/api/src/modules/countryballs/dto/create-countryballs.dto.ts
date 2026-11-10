@@ -23,6 +23,8 @@ import {
   EXPRESSIONS,
   ExpressionId,
   LIMITS,
+  MOVES,
+  MoveId,
   PROPS,
   PropId,
   SCENE_TYPES,
@@ -75,6 +77,11 @@ export class CountryballsLineDto {
   @IsOptional()
   @IsIn(PROPS as unknown as string[])
   prop?: PropId;
+
+  @ApiPropertyOptional({ enum: MOVES, description: "Roast battles: the speaker's move on this line (default auto)" })
+  @IsOptional()
+  @IsIn(MOVES as unknown as string[])
+  move?: MoveId;
 }
 
 export class CountryballsSceneDto {

@@ -60,14 +60,24 @@ export interface WorldMapProps {
   highlightColors?: Record<string, string>;
   /** Prefix for SVG ids, so two maps can be on screen at once (scene transitions). */
   uid?: string;
+  /** Every country gets its own soft colour (political-map look). */
+  fillAll?: boolean;
 }
+
+// Soft, distinct land colours for the political-map look (not blue: blue reads as sea).
+const SOFT = ['#f3d9a4', '#c9e4b4', '#f2c4c4', '#d9cdee', '#f7e3b0', '#bfe3d6', '#f4cfa9', '#e2d4b7', '#d6e7a8', '#efc9de'];
+const softFill = (id: string) => {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return SOFT[h % SOFT.length];
+};
 
 const LAND = '#ece3cf';
 const BORDER = '#8c7b5e';
 const OCEAN_TOP = '#8ec3e6';
 const OCEAN_BOTTOM = '#5f9fcc';
 
-export const WorldMap: React.FC<WorldMapProps> = ({ camera, width, height, highlights, highlightColor, highlightColors, uid = 'map' }) => {
+export const WorldMap: React.FC<WorldMapProps> = ({ camera, width, height, highlights, highlightColor, highlightColors, uid = 'map', fillAll = false }) => {
   const projection = makeProjection(camera, width, height);
   const path = geoPath(projection);
   const borderWidth = Math.min(2.2, Math.max(0.6, camera.scale / 900));
@@ -98,7 +108,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ camera, width, height, highl
         {visible.map((f) => {
           const d = path(f);
           if (!d) return null;
-          return <path key={String(f.id)} d={d} fill={LAND} />;
+          return <path key={String(f.id)} d={d} fill={fillAll ? softFill(String(f.id ?? f.properties?.name ?? '')) : LAND} />;
         })}
       </g>
       {ids.map((id) => {

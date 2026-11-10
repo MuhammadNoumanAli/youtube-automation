@@ -5,7 +5,7 @@
  * reads both through applyVoiceTiming() in dialogue.ts. Neither depends on width/height, so one script and one set
  * of audio files serve both 16:9 and 9:16 versions of a video.
  */
-import type { PropKind } from './types';
+import type { MoveKind, PropKind, SfxKind } from './types';
 import type { Expression } from '../character/expressions';
 
 export type VoiceSpec =
@@ -36,6 +36,8 @@ export interface DialogueLine {
   expression?: Expression;
   /** Prop shown on the speaker from the start of this line (timing only; never affects the audio). */
   prop?: PropKind;
+  /** Roast-battle move for the speaker on this line (timing only; never affects the audio). */
+  move?: MoveKind;
 }
 
 export interface VoiceScript {
@@ -110,4 +112,6 @@ export interface VoiceManifest {
     sfx: (AudioAsset & { scene: string; at: number; volume: number })[];
   };
   assetProblems?: string[];
+  /** Original synthesised sound effects written next to the lines (voice/sfx.mjs). Absent in older manifests. */
+  sfxKit?: { dir: string; files: Partial<Record<SfxKind, string>>; license: string };
 }

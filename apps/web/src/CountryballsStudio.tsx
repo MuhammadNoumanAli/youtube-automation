@@ -16,6 +16,7 @@ interface Options {
   default_narrator_voice: string;
   expressions: string[];
   props?: string[];
+  moves?: string[];
   scene_types: SceneType[];
   dialogue_settings: string[];
   formats: { id: FormatId; label: string }[];
@@ -34,6 +35,8 @@ interface LineRow {
   text: string;
   expression: string;
   prop: string;
+  /** roast battles only; '' = auto */
+  move?: string;
 }
 
 interface SceneRow {
@@ -90,6 +93,15 @@ const SCENE_LABELS: Record<SceneType, string> = {
   'map-focus': 'Map: several countries',
   dialogue: 'Dialogue (countryballs talk)',
   'roast-battle': 'Roast battle (2 countries, map)',
+};
+
+const MOVE_LABELS: Record<string, string> = {
+  auto: 'Move: auto',
+  lean: '↗ lean in',
+  charge: '💥 charge & bump',
+  hop: '⤴ victory hop',
+  deflate: '↘ deflate (loser)',
+  none: '· stay still',
 };
 
 const PROP_LABELS: Record<string, string> = {
@@ -318,6 +330,7 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
         text: l.text.trim(),
         ...(l.expression ? { expression: l.expression } : {}),
         ...(l.prop && l.speaker !== 'narrator' ? { prop: l.prop } : {}),
+        ...(s.type === 'roast-battle' && l.move && l.move !== 'auto' && l.speaker !== 'narrator' ? { move: l.move } : {}),
       })),
     })),
     ...(form.description.trim() ? { description: form.description.trim() } : {}),
@@ -640,13 +653,23 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {s.lines.map((l, li) => {
+                    const roast = s.type === 'roast-battle';
                     const speakers = [
                       'narrator',
                       ...(s.type === 'dialogue' || s.type === 'roast-battle' ? s.countries.filter((c) => castIds.includes(c)) : castIds),
                     ];
                     return (
-                      <div key={li} style={{ display: 'grid', gridTemplateColumns: '108px minmax(0, 1fr) 100px 100px 40px', gap: '6px', alignItems: 'center' }}>
-                        <select className="form-control" value={l.speaker} onChange={(e) => updateLine(si, li, { speaker: e.target.value })}>
+                      <div
+                        key={li}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: roast ? '108px repeat(3, minmax(0, 1fr)) 40px' : '108px minmax(0, 1fr) 100px 100px 40px',
+                          ...(roast ? { paddingBottom: '6px', borderBottom: '1px dashed var(--border-subtle)' } : {}),
+                          gap: '6px',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <select className="form-control" style={roast ? { gridColumn: 1, gridRow: 1 } : undefined} value={l.speaker} onChange={(e) => updateLine(si, li, { speaker: e.target.value })}>
                           {speakers.map((sp) => (
                             <option key={sp} value={sp}>
                               {sp === 'narrator' ? 'Narrator' : countryName(sp)}
@@ -654,7 +677,7 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
                           ))}
                           {!speakers.includes(l.speaker) && <option value={l.speaker}>{countryName(l.speaker)} (not on screen)</option>}
                         </select>
-                        <div style={{ position: 'relative' }}>
+                        <div style={{ position: 'relative', minWidth: 0, ...(roast ? { gridColumn: '2 / 5', gridRow: 1 } : {}) }}>
                           <input
                             className="form-control"
                             value={l.text}
@@ -662,7 +685,7 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
                             onChange={(e) => updateLine(si, li, { text: e.target.value })}
                             placeholder="What is said (one short sentence)"
                             required
-                            style={{ paddingRight: '48px' }}
+                            style={{ paddingRight: '48px', width: '100%', boxSizing: 'border-box' }}
                           />
                           <span
                             style={{
@@ -679,6 +702,7 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
                         </div>
                         <select
                           className="form-control"
+                          style={roast ? { gridColumn: 2, gridRow: 2 } : undefined}
                           value={l.expression}
                           disabled={l.speaker === 'narrator'}
                           onChange={(e) => updateLine(si, li, { expression: e.target.value })}
@@ -692,6 +716,7 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
                         </select>
                         <select
                           className="form-control"
+                          style={roast ? { gridColumn: 3, gridRow: 2 } : undefined}
                           value={l.prop}
                           disabled={l.speaker === 'narrator' || !options.props}
                           onChange={(e) => updateLine(si, li, { prop: e.target.value })}
@@ -704,9 +729,26 @@ export function CountryballsStudio({ channels, projects, onOpenProject, onRefres
                             </option>
                           ))}
                         </select>
+                        {s.type === 'roast-battle' && (
+                          <select
+                            className="form-control"
+                            style={{ gridColumn: 4, gridRow: 2 }}
+                            value={l.move ?? 'auto'}
+                            disabled={l.speaker === 'narrator' || !options.moves}
+                            onChange={(e) => updateLine(si, li, { move: e.target.value })}
+                            title="How the speaker moves on this line. Auto: angry = charge, sad = deflate, crown = hop."
+                          >
+                            {(options.moves ?? ['auto']).map((x) => (
+                              <option key={x} value={x}>
+                                {MOVE_LABELS[x] ?? x}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                         <button
                           type="button"
                           className="btn-secondary"
+                          style={roast ? { gridColumn: 5, gridRow: 1 } : undefined}
                           disabled={s.lines.length <= 1}
                           onClick={() => updateScene(si, { lines: s.lines.filter((_, k) => k !== li) })}
                           title="Remove line"

@@ -6,7 +6,7 @@
  */
 import type { Expression } from '../character/expressions';
 import type { VoiceAssignment, VoiceScript, VoiceSpec } from './voice-types';
-import { PROP_KINDS, type PropKind } from './types';
+import { MOVE_KINDS, PROP_KINDS, type MoveKind, type PropKind } from './types';
 
 export type VideoFormat = '16:9' | '9:16';
 
@@ -20,6 +20,8 @@ export interface LineSpec {
   expression?: Expression;
   /** Prop that appears on the speaker when the line starts (e.g. a crown on the winning line). */
   prop?: PropKind;
+  /** Roast battles: how the speaker moves on this line (default 'auto'). */
+  move?: MoveKind;
 }
 
 export type SceneSpec =
@@ -112,6 +114,7 @@ export function validateSpec(spec: VideoSpec, characters: Set<string>, geo: Set<
       if ((l.text ?? '').length > 90) p.push(`${where}: line ${l.id}: longer than 90 characters`);
       if (l.prop !== undefined && !(PROP_KINDS as readonly string[]).includes(l.prop)) p.push(`${where}: line ${l.id}: unknown prop "${l.prop}"`);
       if (l.prop !== undefined && l.speaker === 'narrator') p.push(`${where}: line ${l.id}: the narrator cannot hold a prop`);
+      if (l.move !== undefined && !(MOVE_KINDS as readonly string[]).includes(l.move)) p.push(`${where}: line ${l.id}: unknown move "${l.move}"`);
     }
   }
   return p;
