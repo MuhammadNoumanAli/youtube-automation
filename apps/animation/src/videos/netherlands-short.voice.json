@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "videoId": "NetherlandsShort",
+  "language": "en",
+  "narrator": {
+    "voice": { "engine": "kokoro", "voice": "am_michael", "speed": 1.0 }
+  },
+  "characters": {
+    "netherlands": {
+      "voice": { "engine": "kokoro", "voice": "af_heart", "speed": 1.05 },
+      "fallback": [{ "engine": "piper", "model": "en_US-libritts-high", "speaker": 92, "speed": 1.05 }]
+    }
+  },
+  "timing": { "gapFrames": 4, "tailFrames": 12 },
+  "lines": [
+    { "id": "hook-1", "scene": "intro", "speaker": "narrator", "at": 8, "text": "This country is lower than the sea right next to it." },
+    { "id": "hook-2", "scene": "intro", "speaker": "narrator", "at": 90, "text": "So how is it still dry?" },
+    { "id": "intro-n1", "scene": "intro", "speaker": "narrator", "at": 150, "text": "Meet the Netherlands, by the North Sea." },
+    { "id": "intro-c1", "scene": "intro", "speaker": "netherlands", "at": 200, "text": "Hallo! Much of my land lies below sea level." },
+    { "id": "conflict-n1", "scene": "conflict", "speaker": "narrator", "at": 10, "text": "But the North Sea never stops pushing." },
+    { "id": "conflict-c1", "scene": "conflict", "speaker": "netherlands", "at": 95, "text": "Uh oh... the water is coming!" },
+    { "id": "conflict-c3", "scene": "conflict", "speaker": "netherlands", "at": 160, "text": "My fields! My windmill!" },
+    { "id": "conflict-c2", "scene": "conflict", "speaker": "netherlands", "at": 232, "text": "Not today, sea!" },
+    { "id": "resolution-n1", "scene": "resolution", "speaker": "narrator", "at": 4, "text": "So the Dutch built dikes..." },
+    { "id": "resolution-n2", "scene": "resolution", "speaker": "narrator", "at": 66, "text": "...and held back the sea, one wall at a time." },
+    { "id": "resolution-c1", "scene": "resolution", "speaker": "netherlands", "at": 170, "text": "We fight the sea. And we win!" },
+    { "id": "outro-1", "scene": "resolution", "speaker": "narrator", "at": 236, "text": "Dry feet, every single day." }
+  ]
+}

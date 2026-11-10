@@ -8,6 +8,7 @@ import { applyVoiceTiming } from './engine/dialogue';
 import type { VoiceManifest } from './engine/voice-types';
 import { VoicedVideoRenderer } from './render/VoicedVideoRenderer';
 import { netherlandsVoicedBase, netherlandsVoiceScript } from './videos/netherlands-voiced';
+import { netherlandsShortBase, netherlandsShortScript } from './videos/netherlands-short';
 import { buildFromSpec } from './engine/spec-build';
 import type { VideoSpec } from './engine/spec';
 import exampleSpec from './videos/specs/low-countries.spec.json';
@@ -30,6 +31,18 @@ const voicedTiming = (manifest: VoiceManifest | null) => applyVoiceTiming(nether
 }
 const NetherlandsVoiced: React.FC<VoicedProps> = ({ manifest }) => {
   const t = voicedTiming(manifest);
+  return <VoicedVideoRenderer video={t.video} lines={t.lines} manifest={manifest} />;
+};
+
+// ---- Tighter Netherlands Short: hook from second 0, no dead air (same scenes as NetherlandsVoiced).
+const shortTiming = (manifest: VoiceManifest | null) => applyVoiceTiming(netherlandsShortBase, netherlandsShortScript, manifest);
+{
+  const preview = shortTiming(null);
+  const structural = [...preview.problems, ...validateVideo(preview.video)];
+  if (structural.length) throw new Error(`NetherlandsShort config is invalid:\n- ${structural.join('\n- ')}`);
+}
+const NetherlandsShort: React.FC<VoicedProps> = ({ manifest }) => {
+  const t = shortTiming(manifest);
   return <VoicedVideoRenderer video={t.video} lines={t.lines} manifest={manifest} />;
 };
 
@@ -69,6 +82,16 @@ export const RemotionRoot: React.FC = () => (
       fps={netherlandsVoicedBase.fps}
       width={netherlandsVoicedBase.width}
       height={netherlandsVoicedBase.height}
+    />
+    <Composition
+      id={netherlandsShortBase.id}
+      component={NetherlandsShort}
+      defaultProps={{ manifest: null } as VoicedProps}
+      calculateMetadata={({ props }) => ({ durationInFrames: totalDuration(shortTiming(props.manifest).video) })}
+      durationInFrames={totalDuration(shortTiming(null).video)}
+      fps={netherlandsShortBase.fps}
+      width={netherlandsShortBase.width}
+      height={netherlandsShortBase.height}
     />
     <Composition
       id="FromSpec"
