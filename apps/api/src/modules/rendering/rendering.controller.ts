@@ -8,6 +8,7 @@ import {
   Post,
   Res,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import * as fs from 'fs';
@@ -18,11 +19,15 @@ import { RenderApprovalDto } from './dto/render-approval.dto';
 import { RenderJob } from '../../database/entities/render-job.entity';
 import { VideoProject } from '../../database/entities/video-project.entity';
 import { ApprovalRecord } from '../../database/entities/approval-record.entity';
+import { animationRendersDir, isInsideDir } from '../countryballs/animation-paths';
 
 @ApiTags('Rendering')
 @Controller()
 export class RenderingController {
-  constructor(private readonly renderingService: RenderingService) {}
+  constructor(
+    private readonly renderingService: RenderingService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Get('rendering/binaries')
   @ApiOperation({ summary: 'Check FFmpeg and FFprobe binary availability' })
@@ -60,10 +65,12 @@ export class RenderingController {
       throw new NotFoundException('Rendered video file not found for this project');
     }
 
-    // Path traversal check: verify file is strictly inside storage/renders
+    // Path traversal check: the file must be inside storage/renders, or the Countryballs renders folder
+    // (ANIMATION_STUDIO_ROOT/renders/countryballs), where the animation job writes its videos.
     const storageDir = path.resolve(this.renderingService.getStorageDir());
     const resolvedTarget = path.resolve(job.output_path);
-    if (!resolvedTarget.startsWith(storageDir)) {
+    const countryballsDir = animationRendersDir((k) => this.configService.get<string>(k));
+    if (!resolvedTarget.startsWith(storageDir) && !isInsideDir(countryballsDir, resolvedTarget)) {
       throw new BadRequestException('Unauthorized video path');
     }
 

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './App.css';
+import { CountryballsStudio } from './CountryballsStudio';
 
 interface HealthData {
   status: 'ok' | 'degraded' | 'error';
@@ -287,7 +288,7 @@ const isMockUpload = (rec: UploadRecord | null) => Boolean(rec?.youtube_video_id
 const UPLOAD_APPROVED_STATUSES = ['ready_to_upload', 'uploading', 'uploaded_private'];
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'magic' | 'channels' | 'ideas' | 'projects' | 'render' | 'upload' | 'jobs'>(() => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'magic' | 'countryballs' | 'channels' | 'ideas' | 'projects' | 'render' | 'upload' | 'jobs'>(() => {
     try {
       return new URLSearchParams(window.location.search).get('tab') === 'upload' ? 'upload' : 'dashboard';
     } catch {
@@ -581,7 +582,10 @@ export function App() {
       }
       if (assetRes.ok) setAssets(await assetRes.json());
       if (narrRes.ok) setNarrations(await narrRes.json());
-      if (rendRes.ok) setLatestRender(await rendRes.json());
+      if (rendRes.ok) {
+        const rendText = await rendRes.text();
+        setLatestRender(rendText && rendText.trim().length > 0 ? JSON.parse(rendText) : null);
+      }
       if (upRes.ok) {
         const upText = await upRes.text();
         setUploadRecord(upText && upText.trim().length > 0 ? JSON.parse(upText) : null);
@@ -875,8 +879,51 @@ export function App() {
     }
   };
 
+  // Countryballs (Phase 4c): open a project on another tab, and refresh the list from the Countryballs panel.
+  const openProjectTab = (projectId: string, tab: 'projects' | 'render' | 'upload') => {
+    setSelectedProjectId(projectId);
+    setActiveTab(tab);
+  };
+  const refreshProjects = useCallback(() => {
+    fetchProjects();
+    if (selectedProjectId) fetchProjectDetails(selectedProjectId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProjectId]);
+  const isCountryballsProject = activeScript?.provider === 'countryballs-form';
+  // While the selected project is queued or rendering in the background, refresh it so Render Review updates by itself.
+  const selectedStatus = projects.find((p) => p.id === selectedProjectId)?.status;
+  useEffect(() => {
+    if (!selectedProjectId || (selectedStatus !== 'ready_to_render' && selectedStatus !== 'rendering')) return;
+    const t = setInterval(() => {
+      fetchProjects();
+      fetchProjectDetails(selectedProjectId);
+    }, 8000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProjectId, selectedStatus]);
+
   const handleStartRender = async () => {
     if (!selectedProjectId) return;
+    if (isCountryballsProject) {
+      // Countryballs projects render through the animation app as a background job, not the FFmpeg slideshow renderer.
+      try {
+        setRendering(true);
+        const res = await fetch(`/api/countryballs/projects/${selectedProjectId}/render`, { method: 'POST' });
+        const body = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setFeedbackMsg('Countryballs render queued: voices and animation run in the background (several minutes). This page updates when it is ready for review.');
+        } else {
+          setFeedbackMsg(`Render not started: ${Array.isArray(body.message) ? body.message.join(' • ') : body.message}`);
+        }
+        fetchProjects();
+        fetchProjectDetails(selectedProjectId);
+      } catch (e: any) {
+        setFeedbackMsg(`Render process error: ${e.message}`);
+      } finally {
+        setRendering(false);
+      }
+      return;
+    }
     try {
       setRendering(true);
       setFeedbackMsg('Rendering pipeline started with local FFmpeg... Please wait.');
@@ -1153,6 +1200,11 @@ export function App() {
               <span className="badge badge-warning" style={{ fontSize: '9px', padding: '2px 5px', textTransform: 'uppercase' }}>AI</span>
             </button>
           </li>
+          <li className={`nav-item ${activeTab === 'countryballs' ? 'active' : ''}`} style={{ background: activeTab === 'countryballs' ? 'rgba(239, 68, 68, 0.12)' : 'transparent', borderLeft: activeTab === 'countryballs' ? '3px solid #ef4444' : 'none' }}>
+            <button onClick={() => setActiveTab('countryballs')}>
+              <span>🌍 Countryballs</span>
+            </button>
+          </li>
           <li className={`nav-item ${activeTab === 'channels' ? 'active' : ''}`}>
             <button onClick={() => setActiveTab('channels')}>
               <span>📺</span> Channel Profiles
@@ -1214,6 +1266,7 @@ export function App() {
             <h1 className="header-title">
               {activeTab === 'dashboard' && 'Studio Overview & Health'}
               {activeTab === 'magic' && '✨ 1-Click Magic Video Studio (Shorts, Reels & Avatars)'}
+              {activeTab === 'countryballs' && '🌍 Countryballs Studio: form to video'}
               {activeTab === 'channels' && 'YouTube Channel Profiles'}
               {activeTab === 'ideas' && 'Content Strategy & Topic Backlog'}
               {activeTab === 'projects' && 'Production Studio: Script & Assets'}
@@ -1607,10 +1660,10 @@ export function App() {
                         style={{ flex: 1, background: '#ef4444', borderColor: '#dc2626' }}
                         onClick={() => {
                           setSelectedProjectId(magicResult.project_id);
-                          setActiveTab('upload');
+                          setActiveTab('projects');
                         }}
                       >
-                        🚀 Review &amp; Upload to YouTube
+                        📝 Review &amp; approve script
                       </button>
                       <button
                         className="btn-secondary"
@@ -1686,6 +1739,16 @@ export function App() {
           )}
 
           {/* TAB: CHANNELS */}
+          {activeTab === 'countryballs' && (
+            <CountryballsStudio
+              channels={channels}
+              projects={projects}
+              onOpenProject={openProjectTab}
+              onRefreshProjects={refreshProjects}
+              onFeedback={setFeedbackMsg}
+            />
+          )}
+
           {activeTab === 'channels' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
               <div className="card">
@@ -2094,9 +2157,11 @@ export function App() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={handleGenerateScript} className="btn-secondary">
-                          ⚡ Generate Script Draft ({settings?.providers.text.activeProvider || 'Mock'})
-                        </button>
+                        {!isCountryballsProject && (
+                          <button onClick={handleGenerateScript} className="btn-secondary">
+                            ⚡ Generate Script Draft ({settings?.providers.text.activeProvider || 'Mock'})
+                          </button>
+                        )}
                         {activeScript && activeScript.status !== 'approved' && (
                           <button onClick={() => handleApproveScript(activeScript.id)} className="btn-success">
                             ✓ Approve Script (Human Gate)
@@ -2121,6 +2186,11 @@ export function App() {
                             readOnly={activeScript.status === 'approved'}
                             style={{ width: '100%', fontFamily: 'monospace', fontSize: '12px', lineHeight: 1.6 }}
                           />
+                          {isCountryballsProject && (
+                            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                              🌍 Countryballs script: these exact lines and voices are what will be voiced and animated after approval. To change them, create a new project from the Countryballs form.
+                            </div>
+                          )}
                           {activeScript.status !== 'approved' && (
                             <div style={{ marginTop: '12px' }}>
                               <label style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Approval Sign-Off Notes:</label>
@@ -2213,7 +2283,13 @@ export function App() {
                     className="btn-primary"
                     style={{ padding: '8px 18px', fontWeight: 600 }}
                   >
-                    {rendering ? '⚙️ Rendering via FFmpeg...' : '▶ Start FFmpeg Render'}
+                    {isCountryballsProject
+                      ? rendering
+                        ? 'Queuing…'
+                        : '▶ Render Countryballs animation'
+                      : rendering
+                        ? '⚙️ Rendering via FFmpeg...'
+                        : '▶ Start FFmpeg Render'}
                   </button>
                 </div>
               </div>
@@ -2233,7 +2309,7 @@ export function App() {
                       )}
                     </div>
 
-                    {latestRender && latestRender.status === 'completed' ? (
+                    {latestRender && (latestRender.status === 'completed' || (isCountryballsProject && latestRender.status === 'failed' && latestRender.validation_json)) ? (
                       <div>
                         <video
                           key={latestRender.id}
@@ -2258,7 +2334,9 @@ export function App() {
                         <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎬</div>
                         <div>No completed render found for this project.</div>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                          Ensure script is approved and audio synthesized, then click "Start FFmpeg Render".
+                          {isCountryballsProject
+                            ? 'Approve the script, then click "Render Countryballs animation". Rendering takes a few minutes in the background.'
+                            : 'Ensure script is approved and audio synthesized, then click "Start FFmpeg Render".'}
                         </div>
                       </div>
                     )}
@@ -2388,6 +2466,60 @@ export function App() {
                     )}
                   </div>
 
+                  {isCountryballsProject ? (
+                    <div className="card" style={{ borderLeft: '4px solid #ef4444' }}>
+                      <div className="card-header">
+                        <span className="card-title">🌍 Countryballs animation checks</span>
+                        {latestRender?.validation_json && (
+                          <span className={`badge ${latestRender.validation_json.valid ? 'badge-success' : 'badge-danger'}`}>
+                            {latestRender.validation_json.valid ? 'ALL PASSED' : 'NEEDS ATTENTION'}
+                          </span>
+                        )}
+                      </div>
+                      {(() => {
+                        const anim = (latestRender?.validation_json as unknown as {
+                          animation?: { checks?: Record<string, boolean | null>; loudness?: { integratedLUFS?: number; truePeakDBTP?: number } | null; voice?: { lines?: number; fallbacks?: number; testTones?: boolean } | null };
+                          errors?: string[];
+                        } | null)?.animation;
+                        const errors = (latestRender?.validation_json as unknown as { errors?: string[] } | null)?.errors ?? [];
+                        if (!anim) {
+                          return (
+                            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                              Voices (local Kokoro) and picture are made by the animation app. Click "Render Countryballs animation"; the checks appear here when it finishes.
+                            </div>
+                          );
+                        }
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px' }}>
+                            {Object.entries(anim.checks ?? {}).map(([k, v]) => (
+                              <div key={k} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{k}</span>
+                                <span style={{ color: v === false ? 'var(--accent-red)' : v === null ? 'var(--text-muted)' : 'var(--accent-green)', fontWeight: 600 }}>
+                                  {v === false ? 'FAIL' : v === null ? 'NOT RUN' : 'PASS'}
+                                </span>
+                              </div>
+                            ))}
+                            {anim.loudness && (
+                              <div style={{ color: 'var(--text-muted)', marginTop: '6px' }}>
+                                Loudness {anim.loudness.integratedLUFS} LUFS, true peak {anim.loudness.truePeakDBTP} dBTP
+                              </div>
+                            )}
+                            {anim.voice && (
+                              <div style={{ color: 'var(--text-muted)' }}>
+                                Voice: {anim.voice.lines} lines, {anim.voice.fallbacks} fallback(s){anim.voice.testTones ? ' (TEST TONES)' : ''}
+                              </div>
+                            )}
+                            {errors.length > 0 && (
+                              <div className="alert-error" style={{ marginTop: '8px' }}>
+                                {errors.join(' • ')}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <>
                   {/* Narration Track Card */}
                   <div className="card">
                     <div className="card-header">
@@ -2452,6 +2584,8 @@ export function App() {
                       )}
                     </div>
                   </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

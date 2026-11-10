@@ -10,6 +10,7 @@ import { RenderJob, RenderJobStatus, VideoProbeValidation } from '../../database
 import { Script, ScriptStatus } from '../../database/entities/script.entity';
 import { VideoFormat, VideoProject, VideoProjectStatus } from '../../database/entities/video-project.entity';
 import { RenderingService } from '../rendering/rendering.service';
+import { animationRendersDir, animationStudioRoot } from './animation-paths';
 import { checkSpec, CountryballsSpec, SpecFormat } from './countryballs-spec';
 import { runStep, StepResult } from './process-runner';
 
@@ -96,14 +97,13 @@ export class CountryballsRunnerService {
       ? [configuredApp]
       : [path.resolve(process.cwd(), '..', 'animation'), path.resolve(process.cwd(), 'apps', 'animation')];
     const appDir = path.resolve(candidates.find((c) => fs.existsSync(path.join(c, 'scripts', 'render.mjs'))) ?? candidates[0]);
-    const storageRoot = path.resolve(this.configService.get<string>('STORAGE_ROOT') || 'storage');
-    const studioRoot = path.resolve(this.configService.get<string>('ANIMATION_STUDIO_ROOT') || path.join(storageRoot, 'animation'));
+    const studioRoot = animationStudioRoot((k) => this.configService.get<string>(k));
     const audioRoot = path.resolve(this.configService.get<string>('TTS_AUDIO_ROOT') || path.join(studioRoot, 'audio'));
     return {
       appDir,
       studioRoot,
       specsDir: path.join(studioRoot, 'specs'),
-      rendersDir: path.join(studioRoot, 'renders', 'countryballs'),
+      rendersDir: animationRendersDir((k) => this.configService.get<string>(k)),
       cacheDir: path.join(studioRoot, 'cache', 'remotion'),
       tmpDir: path.join(studioRoot, 'tmp'),
       audioRoot,
