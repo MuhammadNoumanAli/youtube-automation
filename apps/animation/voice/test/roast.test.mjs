@@ -158,7 +158,8 @@ test('roast layout keeps the balls apart on screen even for tiny neighbours (bot
       const r = 110;
       const { camera, homes } = eng.layoutRoast(eng.COUNTRY_GEO[a], eng.COUNTRY_GEO[b], w, h, r);
       const px = homes.map((p) => ({ x: (p.lon * Math.PI) / 180 * camera.scale, y: -Math.log(Math.tan(Math.PI / 4 + (p.lat * Math.PI) / 360)) * camera.scale }));
-      assert.ok(Math.hypot(px[0].x - px[1].x, px[0].y - px[1].y) >= r * 2.5, `${a}/${b} ${w}x${h} too close`);
+      assert.ok(Math.hypot(px[0].x - px[1].x, px[0].y - px[1].y) >= r * 2.9, `${a}/${b} ${w}x${h} too close`);
+      if (w > h) assert.ok(Math.abs(px[0].x - px[1].x) >= r * 2.8, `${a}/${b} 16:9 not side by side`);
       assert.ok(camera.scale >= 250 && camera.scale <= 9000);
     }
 });

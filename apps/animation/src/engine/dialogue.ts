@@ -269,8 +269,9 @@ export function applyRoast(scene: SceneConfig, choreo: Choreography, lines: Time
     if (move === 'charge') {
       const hit = s + 8;
       me.fwd.at(s - 1, 0);
-      me.fwd.at(hit, 0.62, 'inOutCubic');
-      me.fwd.at(hit + 4, 0.6, 'linear');
+      // dash to just touching (the balls start ~3 radii apart), so the bump reads without covering the other ball
+      me.fwd.at(hit, 0.4, 'inOutCubic');
+      me.fwd.at(hit + 4, 0.38, 'linear');
       me.fwd.at(hit + 14, lean, 'outCubic');
       me.fwd.at(e, lean, 'linear');
       if (!nextSame) me.fwd.at(e + 12, 0);

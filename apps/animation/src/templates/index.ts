@@ -277,8 +277,19 @@ export function layoutRoast(a: { lon: number; lat: number; scale: number }, b: {
   // In 9:16 sit the pair slightly below centre: the speech bubbles go in the space above them.
   const cy = (ys[0] + ys[1]) / 2 - (vertical ? (height * 0.06) / scale : 0);
   const pos = [0, 1].map((i) => ({ x: (xs[i] - cx) * scale, y: (ys[i] - cy) * scale }));
+  // 16:9: neighbours stacked north-south would overlap (and lean into each other), so spread them side by side.
+  if (!vertical) {
+    const dx = pos[1].x - pos[0].x;
+    const need = radius * 2.9;
+    if (Math.abs(dx) < need) {
+      const sign = dx >= 0 ? 1 : -1;
+      const push = (need - Math.abs(dx)) / 2;
+      pos[0].x -= sign * push;
+      pos[1].x += sign * push;
+    }
+  }
   const d = Math.hypot(pos[1].x - pos[0].x, pos[1].y - pos[0].y);
-  const minDist = radius * 2.6;
+  const minDist = radius * 3;
   if (d < minDist) {
     const ux = d > 1e-6 ? (pos[1].x - pos[0].x) / d : 1;
     const uy = d > 1e-6 ? (pos[1].y - pos[0].y) / d : 0;
@@ -338,8 +349,10 @@ function roastBattle(spec: Extract<SceneSpec, { template: 'roast-battle' }>, ctx
       captions: [],
       captionStyle: 'speech',
       choreography: { kind: 'roast', home: { [a]: homes[0], [b]: homes[1] } },
+      // a whoosh as the round opens (the first line follows quickly, so round breaks stay short)
+      sfxCues: [{ frame: 1, kind: 'whoosh', volume: 0.45 }],
     },
-    lines: linesOf(spec, 24),
+    lines: linesOf(spec, 10),
   };
 }
 

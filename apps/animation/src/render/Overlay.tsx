@@ -75,7 +75,9 @@ export const SpeechCaptions: React.FC<{
   anchor: (ref: string) => { x: number; top: number; bottom: number } | null;
   /** Refs of every character on screen, so the bubble can avoid covering any of them. */
   onScreen: string[];
-}> = ({ captions, frame, fps, characters, anchor, onScreen }) => {
+  /** A title is showing above this y: bubbles must not go above it. */
+  reservedTop?: number;
+}> = ({ captions, frame, fps, characters, anchor, onScreen, reservedTop = 0 }) => {
   const { width, height } = useVideoConfig();
   const vertical = height > width;
   const active = captions.filter((c) => c.style === 'speech' && c.speaker && frame >= c.from && frame < c.to);
@@ -98,7 +100,7 @@ export const SpeechCaptions: React.FC<{
         const all = onScreen.map((ref) => anchor(ref)).filter((v): v is NonNullable<typeof v> => v !== null);
         const highest = Math.min(...all.map((v) => v.top), a.top);
         const lowest = Math.max(...all.map((v) => v.bottom), a.bottom);
-        const above = highest - gap - estH > height * 0.03;
+        const above = highest - gap - estH > Math.max(height * 0.03, reservedTop);
         const top = above ? highest - gap - estH : Math.min(height - estH - height * 0.03, lowest + gap);
         const left = Math.max(30, Math.min(width - boxW - 30, a.x - boxW / 2));
         const tailX = Math.max(34, Math.min(boxW - 34, a.x - left));

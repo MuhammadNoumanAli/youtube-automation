@@ -161,6 +161,7 @@ export const SceneRenderer: React.FC<{
         fps={fps}
         characters={characters}
         onScreen={scene.characters.filter((c) => !c.enter || frame >= c.enter.frame).map((c) => c.ref)}
+        reservedTop={scene.elements.reduce((m, e) => (e.type === 'title' && frame >= e.from && frame < e.to ? Math.max(m, (e.y ?? height * 0.08) + 90) : m), 0)}
         anchor={(ref) => {
           const c = scene.characters.find((ch) => ch.ref === ref);
           if (!c) return null;
