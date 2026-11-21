@@ -51,7 +51,15 @@ export const IntroView: React.FC<{ meta: RaceMeta }> = ({ meta }) => {
             <g key={id} transform={`translate(${x} ${y}) scale(${s}) translate(${-x} ${-y})`}>
               <RaceBall uid={`intro-${i}`} x={x} y={y} r={r} flag={c.flag} roll={0} expression="determined" frame={frame} fps={fps} />
               {g.s >= 80 ? (
-                <text x={x} y={y + r + g.s * 0.2} textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={Math.min(24, g.s * 0.17)} fill="#fff">
+                <text
+                  x={x}
+                  y={y + r + g.s * 0.2}
+                  textAnchor="middle"
+                  fontFamily={FONT}
+                  fontWeight={700}
+                  fontSize={Math.min(24, g.s * 0.17, (g.s * 0.94) / (c.name.length * 0.56))}
+                  fill="#fff"
+                >
                   {c.name}
                 </text>
               ) : null}
