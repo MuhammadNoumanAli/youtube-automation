@@ -13,8 +13,18 @@ export function hashString(s) {
 }
 
 /** mulberry32: small, fast, good enough for gameplay randomness. Returns () => [0, 1). */
+/** murmur3 finaliser: spreads similar seeds ("3:stage:1", "3:stage:2") far apart. */
+function mix32(h) {
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b) >>> 0;
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35) >>> 0;
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
 export function makeRng(seed) {
-  let a = (typeof seed === 'string' ? hashString(seed) : seed >>> 0) || 1;
+  let a = mix32(typeof seed === 'string' ? hashString(seed) : seed >>> 0) || 1;
   const next = () => {
     a = (a + 0x6d2b79f5) >>> 0;
     let t = a;
@@ -22,6 +32,7 @@ export function makeRng(seed) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+  for (let i = 0; i < 4; i++) next(); // warm up
   next.range = (lo, hi) => lo + next() * (hi - lo);
   next.int = (lo, hi) => Math.floor(lo + next() * (hi - lo + 1));
   next.pick = (arr) => arr[Math.floor(next() * arr.length)];

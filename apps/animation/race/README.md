@@ -25,7 +25,7 @@ Your browser opens **Marble Race Maker** (http://127.0.0.1:4600, only on this PC
 5. Progress, time left, log, and the finished video right in the page. **Stop** any time; **Render / resume** under
    *Recent races* continues where it stopped (finished stages are kept).
 
-Videos: `E:\YouTubeStudio\races\<race>.mp4` (+ report). Keep the PowerShell window open while a video is made.
+Videos: `D:\YouTubeStudio\races\<race>.mp4` (+ report). Keep the PowerShell window open while a video is made.
 
 **Do 170 countries need 170 stages?** No. Only "1 out per stage" needs (countries - 1) stages. 170 countries with
 4 out per stage = 43 stages (~25 min video), 10% per stage = 36 stages, or simply ask for 20 stages.
@@ -43,10 +43,10 @@ powershell -ExecutionPolicy Bypass -File scripts\race.ps1 -Only 2        # rende
 Without PowerShell:
 
 ```powershell
-node race/simulate.mjs --race race/races/test-10.race.json --out E:\YouTubeStudio\races\test-10 [--seed 7]
-node scripts/render-race.mjs --race-dir E:\YouTubeStudio\races\test-10 --out E:\YouTubeStudio\races\test-10.mp4 --concurrency 4
-npx remotion studio src/race/index.ts --public-dir E:\YouTubeStudio\races\test-10\replay   # "RaceFull", "RaceFlags"
-node --test race/test/                                                                         # 12 tests, a few seconds
+node race/simulate.mjs --race race/races/test-10.race.json --out D:\YouTubeStudio\races\test-10 [--seed 7]
+node scripts/render-race.mjs --race-dir D:\YouTubeStudio\races\test-10 --out D:\YouTubeStudio\races\test-10.mp4 --concurrency 4
+npx remotion studio src/race/index.ts --public-dir D:\YouTubeStudio\races\test-10\replay   # "RaceFull", "RaceFlags"
+node --test race/test/                                                                         # 14 tests, under a minute
 ```
 
 ## How it works
@@ -84,9 +84,23 @@ finish pops, winner ding, elimination sound, podium sparkle (all original, from 
 | `seed` | any number or text; change it for a different race with the same settings |
 | `fps`, `ballRadius`, `maxStageSeconds`, `introSeconds`, `podiumSeconds` | optional |
 
-Stage types (`race/stages.mjs`), each randomised from the seed: `zigzag` (switchback ramps), `plinko` (peg board +
-run-out ramp), `funnels` (three bottlenecks), `gates` (ramps with timed red/green gates), `spinners` (rotating bars +
-run-out ramp). Clearances scale with the ball size, so they work for 2 big marbles or 197 small ones.
+Stage types, all randomised from the seed:
+
+- **`mix` – mixed hurdles (new course every stage)**: 2–4 rows of obstacles stacked between the hopper and the
+  finish, picked from 9 hurdles (`race/bands.mjs`), so nearly every stage is a different course with its own name
+  ("Seesaw & Hammer Gauntlet"...). With all types allowed, about 70% of stages are mixed.
+  - **Seesaws** (green): tilt under the balls that land on them (the first one decides which way), then spring back
+  - **Windmills** (blue hub): free paddle wheels spun by the falling balls, which then fling the next balls
+  - **Hammers**: swinging pendulums over a ramp; they whack every ball that bounces or flies into them
+  - **Conveyor belts**: carry balls to one end and reverse direction every few seconds
+  - **Moving floors** (purple): slotted floor sliding under the balls; they drop when a slot passes beneath
+  - **Pinball pegs**, **spinners**, **bottleneck funnels**, **slides** (with trapdoors and jump pads)
+- Classic courses: `zigzag` (switchback ramps), `plinko` (peg board + run-out ramp), `funnels` (three bottlenecks),
+  `gates` (ramps with timed red/green gates), `spinners` (rotating bars + run-out ramp).
+
+Never the same classic course twice in a row; the grand final runs on a long zigzag. Every gap is wider than a ball
+and moving parts never come closer to a wall than a ball's width, so nothing wedges or gets crushed; this is checked
+by the tests for 8 to 197 balls.
 
 ## Twists and fairness
 
@@ -122,7 +136,7 @@ in Remotion Studio: composition **RaceFlags**. To fix a flag, edit its entry in 
 - Disk: about 30 MB per minute of video for the segments, the same again for the joined file
   (1 hour ≈ 4 GB in total). `race.ps1` stops if the studio drive has less than 5 GB free.
 - Remotion copies the `replay\` folder into each bundle in the cache, like `render.mjs` does with its audio
-  folder; old `bundle-race-*` folders in `E:\YouTubeStudio\cache\remotion` can be removed by hand.
+  folder; old `bundle-race-*` folders in `D:\YouTubeStudio\cache\remotion` can be removed by hand.
 
 ## Limits and next steps
 
@@ -133,7 +147,7 @@ in Remotion Studio: composition **RaceFlags**. To fix a flag, edit its entry in 
 ## Files
 
 ```text
-race/rng.mjs, physics.mjs, stages.mjs, simulate.mjs   simulator (plain Node)
+race/rng.mjs, physics.mjs, stages.mjs, bands.mjs, simulate.mjs   simulator (plain Node)
 race/races/*.race.json                                 example races (test-10, world-58, long-58, world-197)
 race/ui/server.mjs, index.html, render-flags.mjs       the form (local web page)
 race/test/race.test.mjs                                tests

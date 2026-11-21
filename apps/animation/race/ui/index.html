@@ -128,7 +128,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const CONT = ['All', 'Europe', 'Asia', 'Africa', 'Americas', 'Oceania'];
-const TPL_LABEL = { zigzag: 'Zigzag ramps', plinko: 'Plinko pegs', funnels: 'Funnels', gates: 'Timed gates', spinners: 'Spinners' };
+const TPL_LABEL = { mix: '<b>Mixed hurdles</b> (new course every stage: seesaws, windmills, hammers, conveyors...)', zigzag: 'Zigzag ramps', plinko: 'Plinko pegs', funnels: 'Funnels', gates: 'Timed gates', spinners: 'Spinners' };
 let info = null, selected = new Set(), cont = 'All', mode = 'perStage', spriteReady = false;
 const fmt = (s) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}m ${s%60}s` : `${Math.floor(s/3600)}h ${Math.round((s%3600)/60)}m`;
 const api = async (url, body) => {

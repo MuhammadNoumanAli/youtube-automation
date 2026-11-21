@@ -74,7 +74,7 @@ const StageInner: React.FC<{ meta: RaceMeta; data: StageData }> = ({ meta, data 
       <svg width={COURSE.width} height={COURSE.height} viewBox={`0 0 ${COURSE.width} ${COURSE.height}`}>
         <Backdrop data={data} />
         {data.elements.map((el, i) => (
-          <Element key={i} el={el} kin={data.kin[i]?.[f]} wall={th.wall} accent={th.accent} flash={lastHit[i] !== undefined ? f - lastHit[i] : 99} />
+          <Element key={i} el={el} kin={data.kin[i]?.[f]} wall={th.wall} accent={th.accent} flash={lastHit[i] !== undefined ? f - lastHit[i] : 99} f={f} fps={data.fps} />
         ))}
         {data.balls.map((id, i) => {
           const p = pos(i);
@@ -230,9 +230,88 @@ const capsule = (ax: number, ay: number, bx: number, by: number, r: number, colo
   </g>
 );
 
-const Element: React.FC<{ el: RaceElement; kin: number | undefined; wall: string; accent: string; flash: number }> = ({ el, kin, wall, accent, flash }) => {
+const Element: React.FC<{ el: RaceElement; kin: number | undefined; wall: string; accent: string; flash: number; f: number; fps: number }> = ({
+  el,
+  kin,
+  wall,
+  accent,
+  flash,
+  f,
+  fps,
+}) => {
   const lit = flash < 6;
   switch (el.type) {
+    case 'rotor': {
+      // ball-driven: seesaw (bar on a stand) or paddle wheel (arms + hub); angle comes from the replay
+      const base = ((kin ?? 0) / 10) * (Math.PI / 180);
+      const arms = Array.from({ length: el.arms }, (_, i) => {
+        const a = base + (i * Math.PI) / el.arms;
+        const dx = Math.cos(a) * el.len;
+        const dy = Math.sin(a) * el.len;
+        return capsule(el.c[0] - dx, el.c[1] - dy, el.c[0] + dx, el.c[1] + dy, el.r + (el.style === 'seesaw' ? 1 : 0), el.style === 'seesaw' ? '#8fd14f' : wall, 1, i);
+      });
+      if (el.style === 'seesaw') {
+        const [cx, cy] = el.c;
+        return (
+          <g>
+            <polygon points={`${cx},${cy} ${cx - 16},${cy + 30} ${cx + 16},${cy + 30}`} fill={accent} stroke="#141414" strokeWidth={2} />
+            {arms}
+            <circle cx={cx} cy={cy} r={7} fill="#141414" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <circle cx={el.c[0]} cy={el.c[1]} r={el.len} fill="none" stroke={wall} strokeOpacity={0.12} strokeWidth={2} strokeDasharray="6 8" />
+          {arms}
+          <circle cx={el.c[0]} cy={el.c[1]} r={el.r + 6} fill="#5ec8ff" stroke="#141414" strokeWidth={2} />
+        </g>
+      );
+    }
+    case 'pendulum': {
+      const a = ((kin ?? 0) / 10) * (Math.PI / 180);
+      const bx = el.pivot[0] + Math.sin(a) * el.len;
+      const by = el.pivot[1] + Math.cos(a) * el.len;
+      return (
+        <g>
+          <line x1={el.pivot[0]} y1={el.pivot[1]} x2={bx} y2={by} stroke="#c9ced6" strokeWidth={el.rod * 2} strokeLinecap="round" />
+          <circle cx={el.pivot[0]} cy={el.pivot[1]} r={7} fill="#141414" stroke="#c9ced6" strokeWidth={2} />
+          <circle cx={bx} cy={by + 3} r={el.bobR} fill="#000" opacity={0.3} />
+          <circle cx={bx} cy={by} r={el.bobR} fill="#4a4f58" stroke="#141414" strokeWidth={3} />
+          <circle cx={bx - el.bobR * 0.3} cy={by - el.bobR * 0.3} r={el.bobR * 0.3} fill="#fff" opacity={0.25} />
+        </g>
+      );
+    }
+    case 'slider': {
+      const o = (kin ?? 0) / 2;
+      const [ux, uy] = el.axis;
+      return capsule(el.a[0] + ux * o, el.a[1] + uy * o, el.b[0] + ux * o, el.b[1] + uy * o, el.r, '#c58cff');
+    }
+    case 'belt': {
+      // conveyor: dark belt with chevrons running in the current direction
+      const [ax, ay] = el.a;
+      const [bx, by] = el.b;
+      const len = Math.hypot(bx - ax, by - ay);
+      const ux = (bx - ax) / len;
+      const dir = kin ?? 1;
+      const step = 34;
+      const shift = (((f / fps) * el.speed * dir) % step + step) % step;
+      const n = Math.floor(len / step);
+      const chevrons = Array.from({ length: n }, (_, i) => {
+        const t = i * step + shift;
+        if (t > len - 8) return null;
+        const x = ax + ux * t;
+        const y = ay;
+        const d = dir * Math.sign(ux) * 6;
+        return <polyline key={i} points={`${x - d},${y - 4} ${x + d},${y} ${x - d},${y + 4}`} fill="none" stroke="#ffd400" strokeWidth={2} />;
+      });
+      return (
+        <g>
+          {capsule(ax, ay, bx, by, el.r + 2, '#2b2f36')}
+          {chevrons}
+        </g>
+      );
+    }
     case 'pad': {
       // jump pad: thick orange bar with a spring zigzag; flashes white when it launches a ball
       const [ax, ay] = el.a;
@@ -407,12 +486,12 @@ const Panel: React.FC<{
   const X = COURSE.panelX;
   const W = 400;
   const accent = data.theme.accent;
-  // Long titles must not run off the 400 px panel (e.g. "100 Countries Marble Race — 99 Stages").
-  const header = meta.title.toUpperCase();
-  const headerText = header.length > 32 ? `${header.slice(0, 31)}…` : header;
   const finishers = Object.entries(place).sort((a, b) => a[1] - b[1]);
   const rows: ([string, number] | null)[] =
     finishers.length <= 9 ? finishers : [...finishers.slice(0, 3), null, ...finishers.slice(-5)];
+  // Long titles must not run off the 400 px panel (e.g. "100 Countries Marble Race — 99 Stages").
+  const header = meta.title.toUpperCase();
+  const headerText = header.length > 32 ? `${header.slice(0, 31)}…` : header;
   const progress = Math.min(1, finishedCount / Math.max(1, qualifyCount));
   const row = (id: string, label: string, y: number, color: string, key: string, sad = false) => {
     const c = character(id);

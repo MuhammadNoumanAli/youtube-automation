@@ -72,7 +72,7 @@ test('twists can be switched off', () => {
     const on = buildStage({ template, rng: makeRng(4), ballR: 13, count: 60 });
     const off = buildStage({ template, rng: makeRng(4), ballR: 13, count: 60, twists: { pads: false, bumpers: false, shortcuts: false } });
     assert.equal(off.elements.filter((e) => e.type === 'pad' || e.type === 'bumper' || e.role === 'trapdoor').length, 0, template);
-    if (template !== 'funnels') assert.ok(on.elements.some((e) => e.type === 'pad' || e.type === 'bumper' || e.role === 'trapdoor'), template);
+    if (template !== 'funnels' && template !== 'mix') assert.ok(on.elements.some((e) => e.type === 'pad' || e.type === 'bumper' || e.role === 'trapdoor'), template);
   }
 });
 
@@ -162,4 +162,39 @@ test('periodic gates open for the configured share of each period', () => {
   assert.equal(gateClosed(g, 2.2), false);
   assert.equal(gateClosed({ closed: { until: 1 } }, 0.5), true);
   assert.equal(gateClosed({ closed: { until: 1 } }, 1.5), false);
+});
+
+test('seesaw tilts under a landing ball and springs back; wheel is spun by falling balls; belt carries balls', () => {
+  const see = { type: 'rotor', c: [400, 300], len: 140, r: 6, arms: 1, inertia: 14000, damping: 40000, spring: 300000, rest: 0, maxAngle: 0.45 };
+  const w = new World({ elements: [see], fps: 30 });
+  w.addBall(480, 200, 13);
+  let maxTheta = 0;
+  for (let f = 0; f < 90; f++) {
+    w.stepFrame();
+    maxTheta = Math.max(maxTheta, w.rotors[0].theta);
+  }
+  assert.ok(maxTheta > 0.3, `tilt ${maxTheta}`);
+  assert.ok(Math.abs(w.rotors[0].theta) < 0.15, 'back near level after the ball left');
+
+  const wheel = { type: 'rotor', c: [400, 300], len: 70, r: 6, arms: 3, inertia: 9000, damping: 2500, spring: 0, rest: 0, maxAngle: null };
+  const w2 = new World({ elements: [wheel], fps: 30 });
+  for (let i = 0; i < 6; i++) w2.addBall(430 + i * 3, 100 - i * 40, 13);
+  for (let f = 0; f < 60; f++) w2.stepFrame();
+  assert.ok(Math.abs(w2.rotors[0].theta) > 1, 'wheel turned');
+
+  const belt = new World({ elements: [{ type: 'belt', a: [0, 300], b: [800, 300], r: 6, speed: 300, flip: 0 }], fps: 30 });
+  const bb = belt.addBall(100, 280, 13);
+  for (let f = 0; f < 45; f++) belt.stepFrame();
+  assert.ok(bb.x > 300, `carried to ${bb.x}`);
+});
+
+test('mixed stages: a different course nearly every stage, never too tall, no jams', () => {
+  const seen = new Set();
+  for (let i = 1; i <= 30; i++) {
+    const { data, summary } = simulateStage({ index: i, template: 'mix', alive: ids.slice(0, 25), eliminate: 3, seed: 9, fps: 30, ballR: defaultBallRadius(25) });
+    assert.ok(data.bands.length >= 2 && data.bands.length <= 4);
+    assert.equal(summary.timedOut, false, data.bands.join('>'));
+    seen.add(data.bands.join('>'));
+  }
+  assert.ok(seen.size >= 25, `only ${seen.size} different courses in 30 stages`);
 });

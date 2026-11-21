@@ -18,7 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeRng } from './rng.mjs';
-import { World, spinnerAngle, gateClosed } from './physics.mjs';
+import { World, spinnerAngle, gateClosed, pendulumAngle, sliderOffset, beltDirection } from './physics.mjs';
 import { buildStage, defaultBallRadius, DEFAULT_TWISTS, LAYOUT, TEMPLATES } from './stages.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -88,7 +88,8 @@ export function autoEliminations(count, stages) {
 }
 
 /**
- * Template per stage: the race's list (cycled), or a seeded order without repeating the previous template.
+ * Template per stage, picked at random (from the seed) among the allowed ones, never the same classic course twice in
+ * a row. 'mix' (a new hurdle course every stage) is about 70% of stages when all types are allowed.
  * The grand final (last stage, more than one stage in the race) runs on a long course: zigzag if allowed, else gates.
  */
 function stageTemplates(race, rng) {
@@ -96,8 +97,9 @@ function stageTemplates(race, rng) {
   for (const t of allowed) if (!TEMPLATES.includes(t)) throw new Error(`unknown template "${t}"`);
   const out = [];
   for (let i = 0; i < race.stages; i++) {
-    if (Array.isArray(race.templates) && race.templates.length) out.push(race.templates[i % race.templates.length]);
-    else out.push(rng.pick(TEMPLATES.filter((t) => t !== out[i - 1])));
+    const options = allowed.length > 1 ? allowed.filter((t) => t === 'mix' || t !== out[i - 1]) : allowed;
+    const weighted = options.flatMap((t) => (t === 'mix' ? Array(12).fill(t) : [t]));
+    out.push(rng.pick(weighted));
   }
   const finalT = race.finalTemplate ?? (allowed.includes('zigzag') ? 'zigzag' : allowed.includes('gates') ? 'gates' : null);
   if (race.stages > 1 && finalT) out[out.length - 1] = finalT;
@@ -150,7 +152,8 @@ export function simulateStage({
   const maxFrames = Math.round(maxSeconds * fps);
   const holdFrames = Math.round(holdSeconds * fps);
   const tracks = balls.map(() => []);
-  const kinIdx = stage.elements.map((el, i) => (el.type === 'spinner' || el.type === 'gate' ? i : -1)).filter((i) => i >= 0);
+  const MOVING = new Set(['spinner', 'gate', 'rotor', 'pendulum', 'slider', 'belt']);
+  const kinIdx = stage.elements.map((el, i) => (MOVING.has(el.type) ? i : -1)).filter((i) => i >= 0);
   const kin = Object.fromEntries(kinIdx.map((i) => [i, []]));
   const events = [{ frame: gateFrame, type: 'gate' }];
   const finishOrder = [];
@@ -167,7 +170,23 @@ export function simulateStage({
     balls.forEach((b, i) => tracks[i].push(q2(b.x), q2(b.y), Math.round(((b.angle * 180) / Math.PI) % 360)));
     for (const i of kinIdx) {
       const el = stage.elements[i];
-      kin[i].push(el.type === 'spinner' ? Math.round(((spinnerAngle(el, t) * 180) / Math.PI) * 10) : gateClosed(el, t) ? 1 : 0);
+      // angles in tenths of a degree, slider offset in half pixels, gate 1 = closed, belt 1 / -1 = direction
+      const deg10 = (rad) => Math.round(((rad * 180) / Math.PI) * 10);
+      kin[i].push(
+        el.type === 'spinner'
+          ? deg10(spinnerAngle(el, t))
+          : el.type === 'rotor'
+            ? deg10(world.rotorAngle(i))
+            : el.type === 'pendulum'
+              ? deg10(pendulumAngle(el, t))
+              : el.type === 'slider'
+                ? Math.round(sliderOffset(el, t) * 2)
+                : el.type === 'belt'
+                  ? beltDirection(el, t)
+                  : gateClosed(el, t)
+                    ? 1
+                    : 0,
+      );
     }
 
     for (const b of balls) {
@@ -229,6 +248,7 @@ export function simulateStage({
       index,
       template,
       name: stage.name,
+      bands: stage.bands ?? null,
       theme: stage.theme,
       fps,
       frames: endFrame + 1,

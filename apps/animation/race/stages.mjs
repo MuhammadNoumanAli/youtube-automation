@@ -8,19 +8,14 @@
  * finish line at FINISH_Y and a collecting tray at the bottom.
  */
 
-export const LAYOUT = {
-  width: 1920,
-  height: 1080,
-  x0: 40,
-  x1: 1480,
-  floorY: 1062,
-  finishY: 960,
-  hopperBottom: 210,
-  wallR: 5,
-};
+import { composeMix } from './bands.mjs';
+import { LAYOUT } from './stages-layout.mjs';
+
+export { LAYOUT };
 
 export const GATE_OPEN_S = 1.6;
-export const TEMPLATES = ['zigzag', 'plinko', 'funnels', 'gates', 'spinners'];
+/** 'mix' = a new course every stage, stacked from the hurdle library in bands.mjs. The others are classic courses. */
+export const TEMPLATES = ['mix', 'zigzag', 'plinko', 'funnels', 'gates', 'spinners'];
 
 const NAMES = {
   zigzag: ['Switchback', 'The Long Slide', 'Zigzag Drop', 'Serpentine', 'Hairpin Run'],
@@ -270,7 +265,16 @@ function spinners(rng, r, count, twists) {
   return { elements, hopperCx: rng.range(X0 + 420, X1 - 420) };
 }
 
+/** Mixed course: hopper first (its width decides where the balls enter), then 2-4 random hurdle bands. */
+function mix(rng, r, count, twists) {
+  const cx = rng.range(LAYOUT.x0 + 420, LAYOUT.x1 - 420);
+  const hop = hopper(cx, count, r, GATE_OPEN_S);
+  const course = composeMix(rng, { r, count, twists, entry: { x0: hop.box.x0, x1: hop.box.x1 }, yStart: LAYOUT.hopperBottom + 50 });
+  return { elements: course.elements, hopperCx: cx, name: course.name, bands: course.bands };
+}
+
 const BUILDERS = {
+  mix,
   zigzag: (rng, r, count, twists) => zigzag(rng, r, count, twists, false),
   gates: (rng, r, count, twists) => zigzag(rng, r, count, twists, true),
   plinko,
@@ -289,7 +293,8 @@ export function buildStage({ template, rng, ballR, count, twists = DEFAULT_TWIST
   const hop = hopper(course.hopperCx, count, ballR, GATE_OPEN_S);
   return {
     template,
-    name: rng.pick(NAMES[template]),
+    name: course.name ?? rng.pick(NAMES[template]),
+    bands: course.bands,
     theme: rng.pick(THEMES),
     elements: [...frameElements(), ...hop.elements, ...course.elements],
     spawn: hop.spawn,

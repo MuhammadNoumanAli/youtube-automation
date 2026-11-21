@@ -65,7 +65,7 @@ if (spriteState === 'rendering') {
 
 // ------------------------------------------------------------------ estimates
 // typical stage lengths (s) measured with the simulator; stages that wait for almost everyone run longer
-const STAGE_SECONDS = { zigzag: 35, plinko: 19, funnels: 16, gates: 50, spinners: 18 };
+const STAGE_SECONDS = { mix: 17, zigzag: 35, plinko: 19, funnels: 16, gates: 50, spinners: 18 };
 function plan(body) {
   const count = Number(body.count);
   const opts =
@@ -76,7 +76,8 @@ function plan(body) {
         : { stages: Math.max(1, Math.min(count - 1, parseInt(body.value, 10) || 1)) };
   const eliminate = planEliminations(count, opts);
   const templates = Array.isArray(body.templates) && body.templates.length ? body.templates : TEMPLATES;
-  const avg = templates.reduce((a, t) => a + (STAGE_SECONDS[t] ?? 25), 0) / templates.length;
+  const weight = (t) => (t === 'mix' ? 12 : 1);
+  const avg = templates.reduce((a, t) => a + (STAGE_SECONDS[t] ?? 25) * weight(t), 0) / templates.reduce((a, t) => a + weight(t), 0);
   let left = count;
   let seconds = 16;
   for (const n of eliminate) {

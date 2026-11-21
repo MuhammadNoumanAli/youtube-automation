@@ -8,6 +8,10 @@ export type RaceElement =
   | { type: 'peg'; c: [number, number]; r: number }
   | { type: 'pad'; a: [number, number]; b: [number, number]; r: number; kick: number; cooldown: number }
   | { type: 'bumper'; c: [number, number]; r: number; kick: number; cooldown: number }
+  | { type: 'rotor'; style?: 'seesaw' | 'wheel'; c: [number, number]; len: number; r: number; arms: number; rest?: number; maxAngle?: number | null }
+  | { type: 'pendulum'; pivot: [number, number]; len: number; rod: number; bobR: number; amp: number; period: number; phase: number }
+  | { type: 'slider'; a: [number, number]; b: [number, number]; r: number; axis: [number, number]; amp: number }
+  | { type: 'belt'; a: [number, number]; b: [number, number]; r: number; speed: number; flip: number }
   | { type: 'spinner'; c: [number, number]; len: number; r: number; arms: number; speed: number; phase: number }
   | {
       type: 'gate';
@@ -37,6 +41,8 @@ export interface StageData {
   index: number;
   template: string;
   name: string;
+  /** Hurdle rows of a 'mix' stage, top to bottom (null for classic courses). */
+  bands?: string[] | null;
   theme: RaceTheme;
   fps: number;
   frames: number;
