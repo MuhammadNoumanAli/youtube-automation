@@ -36,6 +36,7 @@ const racesDir = path.join(studio, 'races');
 const cacheDir = path.join(studio, 'cache', 'remotion');
 const browser = args.browser ?? process.env.RACE_BROWSER ?? null;
 const port = parseInt(args.port ?? '4600', 10);
+const instanceId = crypto.randomUUID().slice(0, 8); // lets an open page notice that the server was restarted
 const tmpDir = path.join(studio, 'tmp'); // Remotion/FFmpeg scratch: keep it off the system drive, which is often full
 fs.mkdirSync(racesDir, { recursive: true });
 fs.mkdirSync(cacheDir, { recursive: true });
@@ -245,7 +246,7 @@ const server = http.createServer(async (req, res) => {
       return res.end(fs.readFileSync(path.join(here, 'index.html')));
     }
     if (req.method === 'GET' && p === '/api/info')
-      return json(res, 200, { countries, templates: TEMPLATES, studio, sprite: spriteState, cores: os.cpus().length });
+      return json(res, 200, { countries, templates: TEMPLATES, studio, sprite: spriteState, cores: os.cpus().length, instance: instanceId });
     if (req.method === 'GET' && p === '/flags.png') {
       if (spriteState !== 'ready') return json(res, 404, { error: 'not ready' });
       return serveFile(req, res, spriteFile, 'image/png');
