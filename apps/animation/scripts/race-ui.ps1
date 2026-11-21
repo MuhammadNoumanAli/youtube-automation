@@ -9,7 +9,7 @@
   Videos: <StudioRoot>\races\. Never deletes files.
 #>
 param(
-  [string]$StudioRoot = "E:\YouTubeStudio",
+  [string]$StudioRoot = $(if (Test-Path 'E:\') { 'E:\YouTubeStudio' } elseif (Test-Path 'D:\') { 'D:\YouTubeStudio' } else { Join-Path $env:USERPROFILE 'YouTubeStudio' }),
   [int]$Port = 4600
 )
 $ErrorActionPreference = 'Stop'
@@ -28,6 +28,7 @@ $env:npm_config_cache = $NpmCache
 $env:npm_config_update_notifier = 'false'
 $env:TEMP = $TmpDir
 $env:TMP = $TmpDir
+$env:TMPDIR = $TmpDir
 
 $rootPkg = Join-Path $RepoRoot 'package.json'
 $rootLock = Join-Path $RepoRoot 'package-lock.json'
