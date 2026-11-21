@@ -101,7 +101,8 @@ function stageTemplates(race, rng) {
     const weighted = options.flatMap((t) => (t === 'mix' ? Array(24).fill(t) : [t]));
     out.push(rng.pick(weighted));
   }
-  const finalT = race.finalTemplate ?? (allowed.includes('zigzag') ? 'zigzag' : allowed.includes('gates') ? 'gates' : null);
+  // the final always runs on a long course for drama, even when only mixed (or one classic type) was picked
+  const finalT = race.finalTemplate ?? (allowed.includes('zigzag') ? 'zigzag' : allowed.includes('gates') ? 'gates' : 'zigzag');
   if (race.stages > 1 && finalT) out[out.length - 1] = finalT;
   return out;
 }
@@ -361,7 +362,8 @@ export function simulateRace(race, onStage = () => {}) {
     summaries.push(summary);
     out.push(summary.eliminated);
     usedNames.push(summary.name);
-    lastBands = summary.bands ?? TEMPLATE_BANDS[templates[i]] ?? [];    alive = summary.qualified;
+    lastBands = summary.bands ?? TEMPLATE_BANDS[templates[i]] ?? [];
+    alive = summary.qualified;
     prevRanking = summary.ranking;
   }
   // standings: survivors of the last stage in their finish order, then each stage's eliminated, latest first

@@ -87,11 +87,12 @@
       <div class="opt" data-mode="percent"><input type="radio" name="mode" /><div class="lbl">Percent out per stage <small>Big stages first, tense 1-by-1 stages at the end.</small></div><input type="number" id="v-percent" value="10" min="1" max="90" />%</div>
       <div class="plan" id="plan">Pick at least 2 countries.</div>
 
-      <div class="hint" style="margin-bottom:4px">Stage types <span style="opacity:.75">(all checked = about 85% mixed courses)</span></div>
+      <div class="hint" style="margin-bottom:4px">Stage types <span style="opacity:.75">(Mixed hurdles is on by default; the rest are optional classic courses)</span></div>
       <div class="checks" id="templates"></div>
       <div class="hint" style="margin:4px 0 0">
         Every mixed stage stacks <b>3-5 hurdles</b> from 12 types. A hurdle never repeats inside a stage, the next stage
         skips every hurdle the last one used, and no stage name repeats in a race, so viewers always see a new course.
+        Add a classic type only if you want the odd single-theme stage (ramps, pegs, funnels, gates or spinners).
       </div>
       <hr class="sep" />
       <div class="hint" style="margin-bottom:4px">Twists (comebacks are possible, the race stays fair: everything comes from the seed)</div>
@@ -178,6 +179,7 @@ function settings() {
 }
 async function updatePlan() {
   if (selected.size < 2) { $('plan').innerHTML = 'Pick at least 2 countries.'; return; }
+  if (!settings().templates.length) { $('plan').innerHTML = '<span class="warn">Pick at least one stage type.</span>'; return; }
   try {
     const p = await api('/api/plan', settings());
     const e = p.eliminate;
@@ -197,6 +199,7 @@ async function create(simulateOnly) {
   $('err').textContent = '';
   try {
     const s = settings();
+    if (!s.templates.length) throw new Error('Pick at least one stage type.');
     await api('/api/create', {
       ...s, simulateOnly, countries: [...selected], title: $('title').value.trim(), seed: $('seed').value.trim(),
       twists: { pads: $('tw-pads').checked, bumpers: $('tw-bumpers').checked, shortcuts: $('tw-shortcuts').checked },
@@ -256,7 +259,8 @@ async function init() {
   serverInstance = info.instance ?? null;
   $('where').textContent = `Videos are saved in ${info.studio}\\races`;
   spriteReady = info.sprite === 'ready';
-  $('templates').innerHTML = info.templates.map((t) => `<label><input type="checkbox" value="${t}" checked /> ${TPL_LABEL[t] ?? t}</label>`).join('');
+  // mixed courses first and on by default: every stage then gets 3-5 fresh hurdles; classic types are opt-in extras
+  $('templates').innerHTML = info.templates.map((t) => `<label><input type="checkbox" value="${t}" ${t === 'mix' ? 'checked' : ''} /> ${TPL_LABEL[t] ?? t}</label>`).join('');
   const conc = [1, 2, 4, 6, 8, 12, 16].filter((n) => n <= Math.max(2, info.cores));
   const def = Math.max(1, Math.min(8, Math.floor(info.cores / 2)));
   $('conc').innerHTML = conc.map((n) => `<option value="${n}" ${n === (conc.includes(def) ? def : 2) ? 'selected' : ''}>${n} worker${n > 1 ? 's' : ''}</option>`).join('');

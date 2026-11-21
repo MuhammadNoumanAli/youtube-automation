@@ -221,11 +221,12 @@ test('a whole race never reuses the previous stage hurdles and never repeats a s
   const names = [];
   let prev = [];
   simulateRace(race, (data, summary) => {
-    assert.ok(!data.bands.some((b) => prev.includes(b)), `stage ${summary.index} reused ${data.bands.join('>')} after ${prev.join('>')}`);
+    const bands = data.bands ?? []; // the grand final is a classic long course even when only mix was picked
+    assert.ok(!bands.some((b) => prev.includes(b)), `stage ${summary.index} reused ${bands.join('>')} after ${prev.join('>')}`);
     assert.ok(!names.includes(summary.name), `duplicate stage name ${summary.name}`);
     assert.equal(summary.timedOut, false, `stage ${summary.index} timed out`);
     names.push(summary.name);
-    prev = data.bands;
+    prev = bands;
   });
   assert.equal(names.length, 10);
 });

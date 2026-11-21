@@ -19,7 +19,9 @@ Your browser opens **Marble Race Maker** (http://127.0.0.1:4600, only on this PC
    - *number of stages* (eliminations spread evenly),
    - *percent out per stage* (big stages first, tense one-by-one stages at the end).
    The plan box shows the stages, the expected video length and roughly how long rendering takes.
-3. Stage types, twists, seed, render speed (workers = CPU cores used; more is faster).
+3. Stage types, twists, seed, render speed (workers = CPU cores used; more is faster). **Mixed hurdles** is checked
+   by default, so every stage is a fresh 3–5 hurdle course; tick a classic type as well for the odd single-theme
+   stage (ramps, pegs, funnels, gates, spinners).
 4. **Preview results only** simulates in seconds and shows the winner, top 10 and video length; if you like it,
    click **Looks good: render this video**. Or click **Create video** to do both.
 5. Progress, time left, log, and the finished video right in the page. **Stop** any time; **Render / resume** under
