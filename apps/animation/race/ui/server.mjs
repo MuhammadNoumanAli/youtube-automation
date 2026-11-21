@@ -36,8 +36,11 @@ const racesDir = path.join(studio, 'races');
 const cacheDir = path.join(studio, 'cache', 'remotion');
 const browser = args.browser ?? process.env.RACE_BROWSER ?? null;
 const port = parseInt(args.port ?? '4600', 10);
+const tmpDir = path.join(studio, 'tmp'); // Remotion/FFmpeg scratch: keep it off the system drive, which is often full
 fs.mkdirSync(racesDir, { recursive: true });
 fs.mkdirSync(cacheDir, { recursive: true });
+fs.mkdirSync(tmpDir, { recursive: true });
+const childEnv = { ...process.env, FORCE_COLOR: '0', TEMP: tmpDir, TMP: tmpDir, TMPDIR: tmpDir };
 
 // ------------------------------------------------------------------ countries + flag thumbnails
 const catalog = countryCatalog();
@@ -56,7 +59,7 @@ if (spriteState === 'rendering') {
   fs.writeFileSync(idsFile, JSON.stringify(ids));
   const a = [path.join(here, 'render-flags.mjs'), '--out', spriteFile, '--ids', idsFile, '--cache', cacheDir];
   if (browser) a.push('--browser', browser);
-  const child = spawn(process.execPath, a, { cwd: moduleRoot, windowsHide: true });
+  const child = spawn(process.execPath, a, { cwd: moduleRoot, windowsHide: true, env: childEnv });
   child.on('exit', (code) => {
     spriteState = code === 0 && fs.existsSync(spriteFile) ? 'ready' : 'failed';
     console.log(`[race-ui] flag thumbnails: ${spriteState}`);
@@ -65,7 +68,7 @@ if (spriteState === 'rendering') {
 
 // ------------------------------------------------------------------ estimates
 // typical stage lengths (s) measured with the simulator; stages that wait for almost everyone run longer
-const STAGE_SECONDS = { mix: 17, zigzag: 35, plinko: 19, funnels: 16, gates: 50, spinners: 18 };
+const STAGE_SECONDS = { mix: 16, zigzag: 36, plinko: 18, funnels: 17, gates: 44, spinners: 19 };
 function plan(body) {
   const count = Number(body.count);
   const opts =
@@ -76,7 +79,7 @@ function plan(body) {
         : { stages: Math.max(1, Math.min(count - 1, parseInt(body.value, 10) || 1)) };
   const eliminate = planEliminations(count, opts);
   const templates = Array.isArray(body.templates) && body.templates.length ? body.templates : TEMPLATES;
-  const weight = (t) => (t === 'mix' ? 12 : 1);
+  const weight = (t) => (t === 'mix' ? 24 : 1); // engine draws mixed courses ~24 of 29 stages
   const avg = templates.reduce((a, t) => a + (STAGE_SECONDS[t] ?? 25) * weight(t), 0) / templates.reduce((a, t) => a + weight(t), 0);
   let left = count;
   let seconds = 16;
@@ -134,7 +137,7 @@ function log(line) {
 function runStep(argv) {
   return new Promise((resolve) => {
     log(`> node ${argv.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`);
-    const child = spawn(process.execPath, argv, { cwd: moduleRoot, windowsHide: true, env: { ...process.env, FORCE_COLOR: '0' } });
+    const child = spawn(process.execPath, argv, { cwd: moduleRoot, windowsHide: true, env: childEnv });
     job.child = child;
     let buf = '';
     const onData = (d) => {

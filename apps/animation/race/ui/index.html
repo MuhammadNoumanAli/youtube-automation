@@ -87,14 +87,18 @@
       <div class="opt" data-mode="percent"><input type="radio" name="mode" /><div class="lbl">Percent out per stage <small>Big stages first, tense 1-by-1 stages at the end.</small></div><input type="number" id="v-percent" value="10" min="1" max="90" />%</div>
       <div class="plan" id="plan">Pick at least 2 countries.</div>
 
-      <div class="hint" style="margin-bottom:4px">Stage types</div>
+      <div class="hint" style="margin-bottom:4px">Stage types <span style="opacity:.75">(all checked = about 85% mixed courses)</span></div>
       <div class="checks" id="templates"></div>
+      <div class="hint" style="margin:4px 0 0">
+        Every mixed stage stacks <b>3-5 hurdles</b> from 12 types. A hurdle never repeats inside a stage, the next stage
+        skips every hurdle the last one used, and no stage name repeats in a race, so viewers always see a new course.
+      </div>
       <hr class="sep" />
       <div class="hint" style="margin-bottom:4px">Twists (comebacks are possible, the race stays fair: everything comes from the seed)</div>
       <div class="checks">
         <label><input type="checkbox" id="tw-pads" checked /> Jump pads</label>
-        <label><input type="checkbox" id="tw-bumpers" checked /> Bumpers</label>
-        <label><input type="checkbox" id="tw-shortcuts" checked /> Shortcut trapdoors</label>
+        <label><input type="checkbox" id="tw-bumpers" checked /> Bumpers &amp; bumper fields</label>
+        <label><input type="checkbox" id="tw-shortcuts" checked /> Trapdoors (ramps + floor)</label>
         <label><input type="checkbox" id="tw-comeback" checked /> Comeback start <span class="hint" style="display:inline">(slowest start in front next stage)</span></label>
       </div>
       <hr class="sep" />
@@ -107,6 +111,7 @@
         <button id="simBtn">Preview results only</button>
         <button id="goBtn" class="primary" style="flex:1">Create video</button>
       </div>
+      <div class="hint" style="margin-top:6px">One video at a time. A 99-stage episode renders in roughly 3-4 hours on this PC; finished stages are kept if you stop.</div>
       <div class="err" id="err"></div>
     </section>
 
@@ -128,7 +133,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const CONT = ['All', 'Europe', 'Asia', 'Africa', 'Americas', 'Oceania'];
-const TPL_LABEL = { mix: '<b>Mixed hurdles</b> (new course every stage: seesaws, windmills, hammers, conveyors...)', zigzag: 'Zigzag ramps', plinko: 'Plinko pegs', funnels: 'Funnels', gates: 'Timed gates', spinners: 'Spinners' };
+const TPL_LABEL = { mix: '<b>Mixed hurdles</b> (12 hurdle types, 3-5 stacked per stage, a brand-new course every stage)', zigzag: 'Zigzag ramps', plinko: 'Plinko pegs', funnels: 'Funnels', gates: 'Timed gates', spinners: 'Spinners' };
 let info = null, selected = new Set(), cont = 'All', mode = 'perStage', spriteReady = false;
 const fmt = (s) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}m ${s%60}s` : `${Math.floor(s/3600)}h ${Math.round((s%3600)/60)}m`;
 const api = async (url, body) => {
@@ -178,12 +183,13 @@ async function updatePlan() {
     const e = p.eliminate;
     const head = e.slice(0, 8).join(', ') + (e.length > 8 ? ', …' : '');
     const conc = +$('conc').value;
-    const renderH = (p.estimateSeconds * 30) / (5 * conc) / 3600; // ~5 fps per render worker, a rough guide
+    // measured on this PC: about 6.5x the video length at 3 workers (1080p30); more workers help a little
+    const renderSec = p.estimateSeconds * 6.5 * Math.pow(3 / Math.max(1, conc), 0.35);
     let warn = '';
     if (p.estimateSeconds > 3 * 3600) warn = '<div class="warn">Very long video. Consider more countries out per stage.</div>';
     $('plan').innerHTML = `<b>${selected.size}</b> countries → <b>${p.stages}</b> stages → 1 winner<br>
       Out per stage: ${head}<br>
-      Video length about <b>${fmt(p.estimateSeconds)}</b> · rendering roughly ${renderH < 1 ? Math.max(1, Math.round(renderH * 60)) + ' min' : renderH.toFixed(1) + ' h'} on this PC${warn}`;
+      Video length about <b>${fmt(p.estimateSeconds)}</b> · rendering roughly ${fmt(Math.round(renderSec))} on this PC${warn}`;
   } catch (err) { $('plan').innerHTML = `<span class="warn">${err.message}</span>`; }
 }
 
