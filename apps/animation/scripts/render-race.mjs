@@ -232,21 +232,26 @@ console.log(`[race-render] joined ${todo.length} segments in ${((Date.now() - tj
 const expected = meta.totalFrames / meta.fps;
 let probe = null;
 if (ffprobe) {
-  const p = spawnBin(ffprobe, ['-v', 'error', '-show_entries', 'format=duration:stream=codec_type,codec_name,width,height,r_frame_rate', '-of', 'json', out]);
+  const p = spawnBin(ffprobe, ['-v', 'error', '-show_entries', 'format=duration:stream=codec_type,codec_name,width,height,r_frame_rate,duration,nb_frames', '-of', 'json', out]);
   if (p.status === 0) probe = JSON.parse(p.stdout);
 }
 const duration = probe ? parseFloat(probe.format.duration) : null;
 const v = probe?.streams?.find((x) => x.codec_type === 'video');
 const a = probe?.streams?.find((x) => x.codec_type === 'audio');
+const frames = v?.nb_frames ? parseInt(v.nb_frames, 10) : null;
+// Stream-copied AAC adds a few ms of priming at every segment boundary, so the container is a little longer
+// than the replay even when every frame is there. Frame count is the real check; the duration fallback gets
+// room for that padding (about 12 ms per segment).
+const padding = 0.02 * (meta.stageCount + 2);
 const checks = probe
   ? {
-      duration: Math.abs(duration - expected) < 0.5,
+      duration: frames !== null ? Math.abs(frames - meta.totalFrames) <= 2 : Math.abs(duration - expected) < 0.5 + padding,
       video: v?.codec_name === 'h264' && v.width === meta.width && v.height === meta.height,
       audio: a?.codec_name === 'aac',
     }
   : null;
 report.output = out;
-report.probe = probe ? { duration, expected, video: v, audio: a } : 'ffprobe not found: NOT CHECKED';
+report.probe = probe ? { duration, expected, frames, expectedFrames: meta.totalFrames, video: v, audio: a } : 'ffprobe not found: NOT CHECKED';
 report.checks = checks;
 const ok = checks ? Object.values(checks).every(Boolean) : null;
 const lines = [
@@ -254,7 +259,7 @@ const lines = [
   '',
   `- Output: ${out}`,
   `- Seed: ${meta.seed} · ${meta.competitors.length} countries · ${meta.stageCount} stages · winner **${meta.winner}**`,
-  `- Length: ${fmt(duration ?? expected)} (expected ${fmt(expected)})`,
+  `- Length: ${fmt(duration ?? expected)} (expected ${fmt(expected)}${frames !== null ? `, ${frames} frames` : ''}; a few extra ms per segment come from AAC padding)`,
   report.renderSeconds ? `- Render: ${fmt(report.renderSeconds)} at concurrency ${concurrency} (${report.framesPerSecond} fps)` : '- Render: all segments reused',
   `- Checks: ${checks ? Object.entries(checks).map(([k, val]) => `${k} ${val ? 'PASS' : 'FAIL'}`).join(', ') : 'NOT RUN (no ffprobe)'}`,
   '',
