@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeRng } from './rng.mjs';
 import { World, spinnerAngle, gateClosed, pendulumAngle, sliderOffset, beltDirection } from './physics.mjs';
-import { buildStage, defaultBallRadius, DEFAULT_TWISTS, LAYOUT, TEMPLATES } from './stages.mjs';
+import { buildStage, defaultBallRadius, DEFAULT_TWISTS, LAYOUT, TEMPLATES, TEMPLATE_BANDS } from './stages.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const moduleRoot = path.resolve(here, '..');
@@ -98,7 +98,7 @@ function stageTemplates(race, rng) {
   const out = [];
   for (let i = 0; i < race.stages; i++) {
     const options = allowed.length > 1 ? allowed.filter((t) => t === 'mix' || t !== out[i - 1]) : allowed;
-    const weighted = options.flatMap((t) => (t === 'mix' ? Array(12).fill(t) : [t]));
+    const weighted = options.flatMap((t) => (t === 'mix' ? Array(24).fill(t) : [t]));
     out.push(rng.pick(weighted));
   }
   const finalT = race.finalTemplate ?? (allowed.includes('zigzag') ? 'zigzag' : allowed.includes('gates') ? 'gates' : null);
@@ -127,10 +127,12 @@ export function simulateStage({
   twists = DEFAULT_TWISTS,
   startOrder = 'comeback',
   prevRanking = null,
+  avoidBands = [],
+  takenNames = [],
 }) {
   if (eliminate < 1 || eliminate >= alive.length) throw new Error(`stage ${index}: cannot eliminate ${eliminate} of ${alive.length}`);
   const rng = makeRng(`${seed}:stage:${index}`);
-  const stage = buildStage({ template, rng, ballR, count: alive.length, twists });
+  const stage = buildStage({ template, rng, ballR, count: alive.length, twists, avoidBands, takenNames });
   const world = new World({ elements: stage.elements, fps });
   // spawn slot 0 is the bottom row of the hopper (released first). "comeback": last stage's slowest start in front.
   const shuffled = rng.shuffle(alive);
@@ -271,6 +273,7 @@ export function simulateStage({
       index,
       template,
       name: stage.name,
+      bands: stage.bands ?? null,
       frames: endFrame + 1,
       alive: alive.length,
       eliminate,
@@ -336,6 +339,8 @@ export function simulateRace(race, onStage = () => {}) {
   let prevRanking = null;
   const summaries = [];
   const out = []; // elimination order, last stage first when reversed
+  let lastBands = [];
+  const usedNames = [];
   for (let i = 0; i < race.stages; i++) {
     const { data, summary } = simulateStage({
       index: i + 1,
@@ -349,11 +354,14 @@ export function simulateRace(race, onStage = () => {}) {
       twists: race.twists,
       startOrder: race.startOrder,
       prevRanking,
+      avoidBands: lastBands,
+      takenNames: usedNames,
     });
     onStage(data, summary);
     summaries.push(summary);
     out.push(summary.eliminated);
-    alive = summary.qualified;
+    usedNames.push(summary.name);
+    lastBands = summary.bands ?? TEMPLATE_BANDS[templates[i]] ?? [];    alive = summary.qualified;
     prevRanking = summary.ranking;
   }
   // standings: survivors of the last stage in their finish order, then each stage's eliminated, latest first

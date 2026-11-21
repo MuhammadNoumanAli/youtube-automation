@@ -188,13 +188,44 @@ test('seesaw tilts under a landing ball and springs back; wheel is spun by falli
   assert.ok(bb.x > 300, `carried to ${bb.x}`);
 });
 
-test('mixed stages: a different course nearly every stage, never too tall, no jams', () => {
+test('mixed stages: a new course every stage, no repeated hurdles, never too tall, no jams', () => {
   const seen = new Set();
+  const names = [];
+  let avoid = [];
   for (let i = 1; i <= 30; i++) {
-    const { data, summary } = simulateStage({ index: i, template: 'mix', alive: ids.slice(0, 25), eliminate: 3, seed: 9, fps: 30, ballR: defaultBallRadius(25) });
-    assert.ok(data.bands.length >= 2 && data.bands.length <= 4);
+    const { data, summary } = simulateStage({
+      index: i,
+      template: 'mix',
+      alive: ids.slice(0, 25),
+      eliminate: 3,
+      seed: 9,
+      fps: 30,
+      ballR: defaultBallRadius(25),
+      avoidBands: avoid,
+      takenNames: names,
+    });
+    assert.ok(data.bands.length >= 2 && data.bands.length <= 5, data.bands.join('>'));
+    assert.equal(new Set(data.bands).size, data.bands.length, `repeated hurdle in ${data.bands.join('>')}`);
+    assert.ok(!data.bands.some((b) => avoid.includes(b)), `hurdle reused from the previous stage: ${data.bands.join('>')}`);
     assert.equal(summary.timedOut, false, data.bands.join('>'));
+    names.push(summary.name);
+    avoid = data.bands;
     seen.add(data.bands.join('>'));
   }
-  assert.ok(seen.size >= 25, `only ${seen.size} different courses in 30 stages`);
+  assert.ok(seen.size >= 28, `only ${seen.size} different courses in 30 stages`);
+  assert.equal(new Set(names).size, names.length, `duplicate stage names: ${names.join(', ')}`);
+});
+
+test('a whole race never reuses the previous stage hurdles and never repeats a stage name', () => {
+  const race = loadRace(tmpRace({ id: 'variety', countries: ids.slice(0, 12), stages: 10, templates: ['mix'], seed: 21 }));
+  const names = [];
+  let prev = [];
+  simulateRace(race, (data, summary) => {
+    assert.ok(!data.bands.some((b) => prev.includes(b)), `stage ${summary.index} reused ${data.bands.join('>')} after ${prev.join('>')}`);
+    assert.ok(!names.includes(summary.name), `duplicate stage name ${summary.name}`);
+    assert.equal(summary.timedOut, false, `stage ${summary.index} timed out`);
+    names.push(summary.name);
+    prev = data.bands;
+  });
+  assert.equal(names.length, 10);
 });

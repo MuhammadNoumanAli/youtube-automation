@@ -18,11 +18,11 @@ export const GATE_OPEN_S = 1.6;
 export const TEMPLATES = ['mix', 'zigzag', 'plinko', 'funnels', 'gates', 'spinners'];
 
 const NAMES = {
-  zigzag: ['Switchback', 'The Long Slide', 'Zigzag Drop', 'Serpentine', 'Hairpin Run'],
-  plinko: ['Peg Storm', 'Pinball Rain', 'Bounce House', 'The Pegboard', 'Chaos Pins'],
-  funnels: ['Bottleneck', 'Triple Funnel', 'The Squeeze', 'Hourglass', 'Traffic Jam'],
-  gates: ['Trapdoor Alley', 'Red Light Ramps', 'Timing Gates', 'Stop & Go', 'Gatekeeper'],
-  spinners: ['Windmill Field', 'Spin Cycle', 'Blender', 'Rotor Garden', 'Propeller Maze'],
+  zigzag: ['Switchback', 'The Long Slide', 'Zigzag Drop', 'Serpentine', 'Hairpin Run', 'Slalom Steps', 'Drop & Turn', 'The Wringer', 'Ricochet Ramps', 'Snake Pit'],
+  plinko: ['Peg Storm', 'Pinball Rain', 'Bounce House', 'The Pegboard', 'Chaos Pins', 'Peg Ripper', 'Pinball Pit', 'Lucky Bounce', 'Nail Biter', 'Peg Avalanche'],
+  funnels: ['Bottleneck', 'Triple Funnel', 'The Squeeze', 'Hourglass', 'Traffic Jam', 'Funnel Web', 'Choke Point', 'The Grinder', 'Sand Timer', 'Neck & Neck'],
+  gates: ['Trapdoor Alley', 'Red Light Ramps', 'Timing Gates', 'Stop & Go', 'Gatekeeper', 'Green Means Go', 'Door Dash', 'Shutter Run', 'Red Light Riot', 'Hatch Drop'],
+  spinners: ['Windmill Field', 'Spin Cycle', 'Blender', 'Rotor Garden', 'Propeller Maze', 'Spin Doctor', 'Twister', 'Pinwheel Panic', 'Whirlpool', 'Rotor Riot'],
 };
 
 export const THEMES = [
@@ -138,7 +138,7 @@ function zigzag(rng, r, count, twists, withGates = false) {
     // jump pad where the balls from the ramp above land: they bounce up into the others, the order shuffles
     if (twists.pads && i > 0 && rng() < 0.85) cuts.push(padCut(0, Math.min(0.3, (gap + 30) / len), rng.range(520, 680)));
     // shortcut trapdoor: opens now and then; whoever is rolling over it drops straight to the next ramp
-    if (twists.shortcuts && i < k - 1 && rng() < 0.4) {
+    if (twists.shortcuts && i < k - 1 && rng() < 0.55) {
       const w = Math.max(5.6 * r, 70) / len;
       const uc = rng.range(0.4, 0.62);
       const period = rng.range(3.5, 5.5);
@@ -190,10 +190,10 @@ function plinko(rng, r, count, twists) {
     const offset = row % 2 ? colSp / 2 : 0;
     for (let x = X0 + colSp / 2 + offset; x <= X1 - colSp / 2; x += colSp) {
       if (x < minX || x > maxX) continue;
-      if (rng() < 0.08) continue; // a few missing pegs make each board different
+      if (rng() < 0.04) continue; // a few missing pegs make each board different
       const c = [x + rng.range(-3, 3), y + rng.range(-3, 3)];
       // pinball bumpers among the pegs kick balls sideways and up
-      if (twists.bumpers && rng() < 0.1) elements.push({ type: 'bumper', c, r: 9, kick: rng.range(380, 460), cooldown: 0.35 });
+      if (twists.bumpers && rng() < 0.15) elements.push({ type: 'bumper', c, r: 9, kick: rng.range(420, 520), cooldown: 0.35 });
       else elements.push({ type: 'peg', c, r: pegR });
     }
   }
@@ -206,7 +206,7 @@ function funnels(rng, r, count, twists) {
   const k = 3;
   const h = 150;
   const between = Math.max(4 * r, 70);
-  const neck = Math.max(5.2 * r, 64);
+  const neck = Math.max(4.8 * r, 60);
   const elements = [];
   let y = 280;
   let prevNeck = null;
@@ -256,7 +256,7 @@ function spinners(rng, r, count, twists) {
         len: L,
         r: 6,
         arms,
-        speed: (rng() < 0.5 ? -1 : 1) * rng.range(1.2, 2.6),
+        speed: (rng() < 0.5 ? -1 : 1) * rng.range(1.8, 3.2),
         phase: rng.range(0, Math.PI * 2),
       });
     }
@@ -265,11 +265,20 @@ function spinners(rng, r, count, twists) {
   return { elements, hopperCx: rng.range(X0 + 420, X1 - 420) };
 }
 
-/** Mixed course: hopper first (its width decides where the balls enter), then 2-4 random hurdle bands. */
-function mix(rng, r, count, twists) {
+/** Mixed course: hopper first (its width decides where the balls enter), then 3-5 fresh hurdle bands. */
+function mix(rng, r, count, twists, avoidBands = [], takenNames = []) {
   const cx = rng.range(LAYOUT.x0 + 420, LAYOUT.x1 - 420);
   const hop = hopper(cx, count, r, GATE_OPEN_S);
-  const course = composeMix(rng, { r, count, twists, entry: { x0: hop.box.x0, x1: hop.box.x1 }, yStart: LAYOUT.hopperBottom + 50 });
+  const course = composeMix(rng, {
+    r,
+    count,
+    twists,
+    entry: { x0: hop.box.x0, x1: hop.box.x1 },
+    yStart: LAYOUT.hopperBottom + 50,
+    yEnd: LAYOUT.finishY - 30,
+    avoid: avoidBands,
+    takenNames,
+  });
   return { elements: course.elements, hopperCx: cx, name: course.name, bands: course.bands };
 }
 
@@ -282,18 +291,35 @@ const BUILDERS = {
   spinners,
 };
 
+/** Classic templates are just one kind of hurdle: used to stop the next mixed stage from repeating them. */
+export const TEMPLATE_BANDS = {
+  zigzag: ['ramp'],
+  gates: ['ramp'],
+  plinko: ['pegs'],
+  funnels: ['funnel'],
+  spinners: ['spinners'],
+};
+
 /**
  * Build one stage.
  * @returns {{ template, name, theme, elements, spawn, hopper, finishY, gateOpenAt }}
  */
-export function buildStage({ template, rng, ballR, count, twists = DEFAULT_TWISTS }) {
+export function buildStage({ template, rng, ballR, count, twists = DEFAULT_TWISTS, avoidBands = [], takenNames = [] }) {
   const build = BUILDERS[template];
   if (!build) throw new Error(`unknown stage template "${template}" (have: ${TEMPLATES.join(', ')})`);
-  const course = build(rng, ballR, count, { ...DEFAULT_TWISTS, ...twists });
+  const course =
+    template === 'mix'
+      ? build(rng, ballR, count, { ...DEFAULT_TWISTS, ...twists }, avoidBands, takenNames)
+      : build(rng, ballR, count, { ...DEFAULT_TWISTS, ...twists });
   const hop = hopper(course.hopperCx, count, ballR, GATE_OPEN_S);
+  let name = course.name;
+  if (name === undefined) {
+    const pool = NAMES[template].filter((n) => !takenNames.includes(n));
+    name = pool.length ? rng.pick(pool) : rng.pick(NAMES[template]);
+  }
   return {
     template,
-    name: course.name ?? rng.pick(NAMES[template]),
+    name,
     bands: course.bands,
     theme: rng.pick(THEMES),
     elements: [...frameElements(), ...hop.elements, ...course.elements],

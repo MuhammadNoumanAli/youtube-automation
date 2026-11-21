@@ -46,7 +46,7 @@ Without PowerShell:
 node race/simulate.mjs --race race/races/test-10.race.json --out D:\YouTubeStudio\races\test-10 [--seed 7]
 node scripts/render-race.mjs --race-dir D:\YouTubeStudio\races\test-10 --out D:\YouTubeStudio\races\test-10.mp4 --concurrency 4
 npx remotion studio src/race/index.ts --public-dir D:\YouTubeStudio\races\test-10\replay   # "RaceFull", "RaceFlags"
-node --test race/test/                                                                         # 14 tests, under a minute
+node --test race/test/                                                                         # 15 tests, under a minute
 ```
 
 ## How it works
@@ -86,21 +86,25 @@ finish pops, winner ding, elimination sound, podium sparkle (all original, from 
 
 Stage types, all randomised from the seed:
 
-- **`mix` – mixed hurdles (new course every stage)**: 2–4 rows of obstacles stacked between the hopper and the
-  finish, picked from 9 hurdles (`race/bands.mjs`), so nearly every stage is a different course with its own name
-  ("Seesaw & Hammer Gauntlet"...). With all types allowed, about 70% of stages are mixed.
+- **`mix` – mixed hurdles (a new course every stage)**: 3–5 rows of obstacles stacked between the hopper and the
+  finish, picked from 12 hurdles (`race/bands.mjs`). A hurdle never appears twice in one stage, and the next stage
+  skips every hurdle the previous stage used, so the course in front of the viewers is always new. With all types
+  allowed, about 85% of stages are mixed.
   - **Seesaws** (green): tilt under the balls that land on them (the first one decides which way), then spring back
   - **Windmills** (blue hub): free paddle wheels spun by the falling balls, which then fling the next balls
-  - **Hammers**: swinging pendulums over a ramp; they whack every ball that bounces or flies into them
+  - **Hammers**: two or three swinging pendulums over a ramp; they whack every ball that bounces into them
   - **Conveyor belts**: carry balls to one end and reverse direction every few seconds
-  - **Moving floors** (purple): slotted floor sliding under the balls; they drop when a slot passes beneath
-  - **Pinball pegs**, **spinners**, **bottleneck funnels**, **slides** (with trapdoors and jump pads)
+  - **Sliders** (purple): slotted floor sliding under the balls; they drop when a slot passes beneath
+  - **Double floor**: two sliders stacked, the second moving against the first
+  - **Trapdoor floor**: a row of timed hatches that opens in a wave and rains the whole field down
+  - **Bumper field**: staggered pinball bumpers that throw balls back up the course
+  - **Pinball pegs**, **spinners**, **funnels**, **slides** (with trapdoors and jump pads)
 - Classic courses: `zigzag` (switchback ramps), `plinko` (peg board + run-out ramp), `funnels` (three bottlenecks),
-  `gates` (ramps with timed red/green gates), `spinners` (rotating bars + run-out ramp).
+  `gates` (ramps with timed red/green gates), `spinners` (rotating bars + run-out ramp). Each template has ten names.
 
-Never the same classic course twice in a row; the grand final runs on a long zigzag. Every gap is wider than a ball
-and moving parts never come closer to a wall than a ball's width, so nothing wedges or gets crushed; this is checked
-by the tests for 8 to 197 balls.
+Never the same classic course twice in a row, no stage name repeats in a race, and the grand final runs on a long
+zigzag. Every gap is wider than a ball and moving parts never come closer to a wall than a ball's width, so nothing
+wedges or gets crushed; this is checked by the tests for 8 to 197 balls.
 
 ## Twists and fairness
 
