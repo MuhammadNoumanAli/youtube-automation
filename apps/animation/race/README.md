@@ -28,7 +28,7 @@ Your browser opens **Marble Race Maker** (http://127.0.0.1:4600, only on this PC
 Videos: `D:\YouTubeStudio\races\<race>.mp4` (+ report). Keep the PowerShell window open while a video is made.
 
 **Do 170 countries need 170 stages?** No. Only "1 out per stage" needs (countries - 1) stages. 170 countries with
-4 out per stage = 43 stages (~25 min video), 10% per stage = 36 stages, or simply ask for 20 stages.
+4 out per stage = 43 stages (~15 min video), 10% per stage = 36 stages, or simply ask for 20 stages.
 
 ## Command line (Windows)
 
@@ -132,11 +132,12 @@ in Remotion Studio: composition **RaceFlags**. To fix a flag, edit its entry in 
 
 ## Long videos
 
-- Render speed on a 2-core test machine at concurrency 2: about 9–10 frames/s with up to ~60 marbles on screen,
-  about 6 frames/s with 197.
-  Your PC with `-Concurrency 4` (or more) will be faster. The report prints the real speed, and the log shows
-  "about N min left" after every stage.
-- Rough guide: 1 hour of video = 108,000 frames. At 10 fps that is 3 hours of rendering, at 25 fps about 1h 15m.
+- Measured on this PC with the dense new courses at 1080p30 and `-Concurrency 3`: about 2.5–4 frames/s, slower
+  while 100 marbles are all on screen. The log prints the real speed and "about N min left" after every stage;
+  the form's estimate uses the same numbers.
+- Rule of thumb: rendering takes about **6–7× the video length**. A 99-stage, 31-minute episode takes roughly
+  3.5 hours; a 3-minute race about 20 minutes. Stopping keeps finished segments, so a long render can be split
+  across sessions.
 - Disk: about 30 MB per minute of video for the segments, the same again for the joined file
   (1 hour ≈ 4 GB in total). `race.ps1` stops if the studio drive has less than 5 GB free.
 - Remotion copies the `replay\` folder into each bundle in the cache, like `render.mjs` does with its audio
