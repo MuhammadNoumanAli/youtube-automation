@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Marble Race Maker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { --bg:#0f1420; --panel:#171e2e; --line:#26304a; --text:#e8ecf5; --muted:#8c97b2; --accent:#ffcc33; --green:#3ad18a; --red:#ff5d6c; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:14px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; }
+  header h1 { font-size:20px; margin:0; }
+  header .where { color:var(--muted); font-size:12px; margin-left:auto; }
+  main { display:grid; grid-template-columns: minmax(0,1.35fr) minmax(380px,1fr); gap:18px; padding:18px 22px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  h2 { font-size:15px; margin:0 0 12px; display:flex; align-items:center; gap:10px; }
+  .badge { background:var(--accent); color:#111; border-radius:99px; padding:1px 10px; font-weight:700; font-size:13px; }
+  input[type=text], input[type=number], select { background:#0f1524; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:7px 9px; font:inherit; }
+  input[type=number] { width:80px; }
+  button { background:#24304b; color:var(--text); border:1px solid #33416a; border-radius:8px; padding:7px 12px; font:inherit; cursor:pointer; }
+  button:hover { background:#2d3b5c; }
+  button.primary { background:var(--accent); color:#111; border-color:var(--accent); font-weight:700; }
+  button.primary:hover { filter:brightness(1.07); }
+  button.danger { background:#4a1d26; border-color:#7a2a38; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
+  .chips button { padding:4px 11px; border-radius:99px; font-size:13px; }
+  .chips button.on { background:var(--accent); color:#111; border-color:var(--accent); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; max-height:calc(100vh - 290px); overflow:auto; padding-right:4px; }
+  .c { display:flex; align-items:center; gap:8px; padding:5px 8px; border:1px solid var(--line); border-radius:9px; cursor:pointer; user-select:none; background:#121a2a; }
+  .c:hover { border-color:#3d4b72; }
+  .c.on { border-color:var(--accent); background:#2a2a1a; }
+  .c .f { width:28px; height:28px; flex:none; border-radius:50%; background:#333 center/cover no-repeat; }
+  .c .n { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .c .tick { margin-left:auto; color:var(--accent); font-weight:900; visibility:hidden; }
+  .c.on .tick { visibility:visible; }
+  .opt { border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:8px; display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .opt.on { border-color:var(--accent); background:#221f12; }
+  .opt .lbl { flex:1; }
+  .opt small, .hint { color:var(--muted); display:block; font-size:12px; }
+  .plan { background:#0f1524; border:1px dashed #33416a; border-radius:10px; padding:10px 12px; margin:6px 0 14px; }
+  .plan b { color:var(--accent); }
+  .plan .warn { color:#ffb347; }
+  .checks label { display:inline-flex; gap:6px; align-items:center; margin:0 14px 6px 0; cursor:pointer; }
+  .sep { border:0; border-top:1px solid var(--line); margin:14px 0; }
+  .bar { height:10px; background:#0f1524; border-radius:99px; overflow:hidden; margin:8px 0; }
+  .bar > div { height:100%; background:var(--accent); width:0; transition:width .4s; }
+  pre.log { background:#0b0f19; border:1px solid var(--line); border-radius:8px; padding:8px; max-height:220px; overflow:auto; font:12px/1.4 Consolas, monospace; white-space:pre-wrap; margin:8px 0 0; }
+  video { width:100%; border-radius:10px; margin-top:10px; background:#000; }
+  .status { font-weight:700; }
+  .status.done { color:var(--green); } .status.failed, .status.stopped { color:var(--red); } .status.running { color:var(--accent); }
+  .races { display:flex; flex-direction:column; gap:6px; max-height:260px; overflow:auto; }
+  .race { border:1px solid var(--line); border-radius:9px; padding:7px 10px; display:flex; gap:8px; align-items:center; }
+  .race .t { flex:1; min-width:0; } .race .t div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .err { color:var(--red); margin-top:6px; min-height:18px; }
+  .top10 { columns:2; margin:8px 0 0; padding-left:20px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏁 Marble Race Maker</h1>
+  <span class="where" id="where"></span>
+</header>
+<main>
+  <section>
+    <h2>1. Countries <span class="badge" id="count">0 selected</span></h2>
+    <div class="row">
+      <input type="text" id="search" placeholder="Search country..." style="flex:1;min-width:160px" />
+      <button id="selShown">Select shown</button>
+      <button id="clrShown">Clear shown</button>
+      <button id="clrAll">Clear all</button>
+    </div>
+    <div class="row chips" id="conts"></div>
+    <div class="row">
+      Random pick: <input type="number" id="randN" value="20" min="2" /> <button id="randBtn">Pick random</button>
+      <span class="hint">from the countries shown</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <section>
+      <h2>2. Rules</h2>
+      <div class="row"><input type="text" id="title" placeholder="Title (automatic)" style="flex:1" /></div>
+      <div class="opt on" data-mode="perStage"><input type="radio" name="mode" checked /><div class="lbl">Countries out per stage <small>Stages follow automatically. 1 per stage = longest video.</small></div><input type="number" id="v-perStage" value="1" min="1" /></div>
+      <div class="opt" data-mode="stages"><input type="radio" name="mode" /><div class="lbl">Number of stages <small>Eliminations spread evenly so one country wins.</small></div><input type="number" id="v-stages" value="10" min="1" /></div>
+      <div class="opt" data-mode="percent"><input type="radio" name="mode" /><div class="lbl">Percent out per stage <small>Big stages first, tense 1-by-1 stages at the end.</small></div><input type="number" id="v-percent" value="10" min="1" max="90" />%</div>
+      <div class="plan" id="plan">Pick at least 2 countries.</div>
+
+      <div class="hint" style="margin-bottom:4px">Stage types</div>
+      <div class="checks" id="templates"></div>
+      <hr class="sep" />
+      <div class="hint" style="margin-bottom:4px">Twists (comebacks are possible, the race stays fair: everything comes from the seed)</div>
+      <div class="checks">
+        <label><input type="checkbox" id="tw-pads" checked /> Jump pads</label>
+        <label><input type="checkbox" id="tw-bumpers" checked /> Bumpers</label>
+        <label><input type="checkbox" id="tw-shortcuts" checked /> Shortcut trapdoors</label>
+        <label><input type="checkbox" id="tw-comeback" checked /> Comeback start <span class="hint" style="display:inline">(slowest start in front next stage)</span></label>
+      </div>
+      <hr class="sep" />
+      <div class="row">
+        Seed <input type="text" id="seed" placeholder="random" style="width:110px" /> <button id="dice" title="New random seed">🎲</button>
+        <span style="margin-left:auto">Render speed</span>
+        <select id="conc"></select>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="simBtn">Preview results only</button>
+        <button id="goBtn" class="primary" style="flex:1">Create video</button>
+      </div>
+      <div class="err" id="err"></div>
+    </section>
+
+    <section id="jobSec" style="display:none">
+      <h2>3. Progress <span class="status" id="jobStatus"></span><button id="stopBtn" class="danger" style="margin-left:auto">Stop</button></h2>
+      <div id="jobTitle" class="hint"></div>
+      <div class="bar"><div id="jobBar"></div></div>
+      <div id="jobText"></div>
+      <div id="jobResult"></div>
+      <pre class="log" id="jobLog"></pre>
+    </section>
+
+    <section>
+      <h2>Recent races</h2>
+      <div class="races" id="races"><span class="hint">None yet.</span></div>
+    </section>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const CONT = ['All', 'Europe', 'Asia', 'Africa', 'Americas', 'Oceania'];
+const TPL_LABEL = { zigzag: 'Zigzag ramps', plinko: 'Plinko pegs', funnels: 'Funnels', gates: 'Timed gates', spinners: 'Spinners' };
+let info = null, selected = new Set(), cont = 'All', mode = 'perStage', spriteReady = false;
+const fmt = (s) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}m ${s%60}s` : `${Math.floor(s/3600)}h ${Math.round((s%3600)/60)}m`;
+const api = async (url, body) => {
+  const r = await fetch(url, body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j?.error || r.statusText);
+  return j;
+};
+
+function shown() {
+  const q = $('search').value.trim().toLowerCase();
+  return info.countries
+    .filter((c) => (cont === 'All' || c.continent === cont) && (!q || c.name.toLowerCase().includes(q)))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+function flagStyle(c) {
+  if (!spriteReady) return '';
+  const x = (c.sprite % 20) * 28, y = Math.floor(c.sprite / 20) * 28;
+  return `background-image:url(/flags.png);background-size:560px auto;background-position:-${x}px -${y}px`;
+}
+function renderGrid() {
+  $('grid').innerHTML = shown().map((c) =>
+    `<div class="c ${selected.has(c.id) ? 'on' : ''}" data-id="${c.id}" title="${c.name} (${c.continent})"><span class="f" style="${flagStyle(c)}"></span><span class="n">${c.name}</span><span class="tick">✓</span></div>`).join('');
+  $('count').textContent = `${selected.size} selected`;
+  $('title').placeholder = `${selected.size} Countries Marble Race`;
+  schedulePlan();
+}
+function renderChips() {
+  $('conts').innerHTML = CONT.map((k) => {
+    const n = k === 'All' ? info.countries.length : info.countries.filter((c) => c.continent === k).length;
+    return `<button class="${k === cont ? 'on' : ''}" data-c="${k}">${k} (${n})</button>`;
+  }).join('');
+}
+
+let planTimer = null;
+function schedulePlan() { clearTimeout(planTimer); planTimer = setTimeout(updatePlan, 150); }
+function settings() {
+  return {
+    count: selected.size, mode, value: $(`v-${mode}`).value,
+    templates: [...document.querySelectorAll('#templates input:checked')].map((i) => i.value),
+  };
+}
+async function updatePlan() {
+  if (selected.size < 2) { $('plan').innerHTML = 'Pick at least 2 countries.'; return; }
+  try {
+    const p = await api('/api/plan', settings());
+    const e = p.eliminate;
+    const head = e.slice(0, 8).join(', ') + (e.length > 8 ? ', …' : '');
+    const conc = +$('conc').value;
+    const renderH = (p.estimateSeconds * 30) / (5 * conc) / 3600; // ~5 fps per render worker, a rough guide
+    let warn = '';
+    if (p.estimateSeconds > 3 * 3600) warn = '<div class="warn">Very long video. Consider more countries out per stage.</div>';
+    $('plan').innerHTML = `<b>${selected.size}</b> countries → <b>${p.stages}</b> stages → 1 winner<br>
+      Out per stage: ${head}<br>
+      Video length about <b>${fmt(p.estimateSeconds)}</b> · rendering roughly ${renderH < 1 ? Math.max(1, Math.round(renderH * 60)) + ' min' : renderH.toFixed(1) + ' h'} on this PC${warn}`;
+  } catch (err) { $('plan').innerHTML = `<span class="warn">${err.message}</span>`; }
+}
+
+async function create(simulateOnly) {
+  $('err').textContent = '';
+  try {
+    const s = settings();
+    await api('/api/create', {
+      ...s, simulateOnly, countries: [...selected], title: $('title').value.trim(), seed: $('seed').value.trim(),
+      twists: { pads: $('tw-pads').checked, bumpers: $('tw-bumpers').checked, shortcuts: $('tw-shortcuts').checked },
+      comeback: $('tw-comeback').checked, concurrency: $('conc').value,
+    });
+    poll();
+  } catch (e) { $('err').textContent = e.message; }
+}
+
+let pollTimer = null;
+async function poll() {
+  clearTimeout(pollTimer);
+  const j = await api('/api/job').catch(() => null);
+  if (j) {
+    $('jobSec').style.display = '';
+    $('jobStatus').textContent = j.status;
+    $('jobStatus').className = `status ${j.status}`;
+    $('stopBtn').style.display = j.status === 'running' ? '' : 'none';
+    $('goBtn').disabled = $('simBtn').disabled = j.status === 'running';
+    $('jobTitle').textContent = j.race?.meta?.title ? `${j.race.meta.title} · ${j.raceId}` : j.raceId;
+    const pr = j.progress;
+    const pct = pr ? (pr.phase === 'simulate' ? 10 * pr.done / pr.total : 10 + 90 * pr.done / pr.total) : 0;
+    $('jobBar').style.width = `${j.status === 'done' ? 100 : pct}%`;
+    let t = pr ? (pr.phase === 'simulate' ? `Simulating stage ${pr.done} of ${pr.total}` : `Rendering part ${Math.min(pr.done + 1, pr.total)} of ${pr.total}`) : 'Starting…';
+    if (j.status === 'running' && j.eta && pr?.phase === 'render') t += ` · about ${j.eta} left`;
+    if (j.status !== 'running') t = { done: 'Finished.', failed: 'Something went wrong: see the log.', stopped: 'Stopped. Use "Render / resume" below to continue.' }[j.status] || '';
+    $('jobText').textContent = t;
+    const m = j.race?.meta;
+    let res = '';
+    if (m && j.status !== 'running') res += `<div style="margin-top:6px">Winner: <b>${m.winner}</b> · ${m.countries} countries · ${m.stages} stages · video ${fmt(m.seconds)}</div>
+      <ol class="top10">${m.top.map((s) => `<li>${s.name}</li>`).join('')}</ol>`;
+    if (j.race?.video && j.status === 'done') res += `<video controls src="/video/${j.raceId}?t=${j.endedAt}"></video><div class="hint">${j.race.video}</div>`;
+    if (j.status === 'done' && !j.race?.video && m) res += `<button onclick="renderRace('${j.raceId}')" class="primary" style="margin-top:8px">Looks good: render this video</button>`;
+    if ($('jobResult').dataset.k !== res) { $('jobResult').innerHTML = res; $('jobResult').dataset.k = res; }
+    const log = $('jobLog'), atEnd = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+    log.textContent = j.log.join('\n');
+    if (atEnd) log.scrollTop = log.scrollHeight;
+    if (j.status === 'running') pollTimer = setTimeout(poll, 1500);
+    else loadRaces();
+  }
+}
+async function renderRace(id) {
+  $('err').textContent = '';
+  try { await api('/api/render', { raceId: id, concurrency: $('conc').value }); poll(); } catch (e) { $('err').textContent = e.message; }
+}
+async function loadRaces() {
+  const list = await api('/api/races').catch(() => []);
+  if (!list.length) return;
+  $('races').innerHTML = list.map((r) => `<div class="race"><div class="t"><div><b>${r.meta?.title ?? r.id}</b></div>
+    <div class="hint">${r.meta ? `${r.meta.countries} countries · ${r.meta.stages} stages · ${fmt(r.meta.seconds)} · winner ${r.meta.winner}` : 'not simulated yet'}</div></div>
+    ${r.video ? `<a href="/video/${r.id}" target="_blank"><button>Watch</button></a>` : ''}
+    <button onclick="renderRace('${r.id}')">${r.video ? 'Render again' : 'Render / resume'}</button></div>`).join('');
+}
+
+async function init() {
+  info = await api('/api/info');
+  $('where').textContent = `Videos are saved in ${info.studio}\\races`;
+  spriteReady = info.sprite === 'ready';
+  $('templates').innerHTML = info.templates.map((t) => `<label><input type="checkbox" value="${t}" checked /> ${TPL_LABEL[t] ?? t}</label>`).join('');
+  const conc = [1, 2, 4, 6, 8, 12, 16].filter((n) => n <= Math.max(2, info.cores));
+  const def = Math.max(1, Math.min(8, Math.floor(info.cores / 2)));
+  $('conc').innerHTML = conc.map((n) => `<option value="${n}" ${n === (conc.includes(def) ? def : 2) ? 'selected' : ''}>${n} worker${n > 1 ? 's' : ''}</option>`).join('');
+  renderChips(); renderGrid(); loadRaces(); poll();
+  if (!spriteReady) {
+    const wait = setInterval(async () => {
+      const i = await api('/api/info').catch(() => null);
+      if (i?.sprite === 'ready') { spriteReady = true; renderGrid(); clearInterval(wait); }
+      if (i?.sprite === 'failed') clearInterval(wait);
+    }, 3000);
+  }
+}
+
+$('grid').addEventListener('click', (e) => {
+  const el = e.target.closest('.c'); if (!el) return;
+  const id = el.dataset.id;
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  el.classList.toggle('on'); $('count').textContent = `${selected.size} selected`; $('title').placeholder = `${selected.size} Countries Marble Race`; schedulePlan();
+});
+$('conts').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; cont = b.dataset.c; renderChips(); renderGrid(); });
+$('search').addEventListener('input', renderGrid);
+$('selShown').onclick = () => { shown().forEach((c) => selected.add(c.id)); renderGrid(); };
+$('clrShown').onclick = () => { shown().forEach((c) => selected.delete(c.id)); renderGrid(); };
+$('clrAll').onclick = () => { selected.clear(); renderGrid(); };
+$('randBtn').onclick = () => {
+  const pool = shown().map((c) => c.id), n = Math.min(pool.length, Math.max(2, +$('randN').value || 2));
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  selected = new Set(pool.slice(0, n)); renderGrid();
+};
+document.querySelectorAll('.opt').forEach((o) => o.addEventListener('click', (e) => {
+  mode = o.dataset.mode;
+  document.querySelectorAll('.opt').forEach((x) => { x.classList.toggle('on', x === o); x.querySelector('input[type=radio]').checked = x === o; });
+  schedulePlan();
+}));
+['v-perStage', 'v-stages', 'v-percent'].forEach((id) => $(id).addEventListener('input', schedulePlan));
+$('templates').addEventListener('change', schedulePlan);
+$('conc').addEventListener('change', schedulePlan);
+$('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 1e6); };
+$('simBtn').onclick = () => create(true);
+$('goBtn').onclick = () => create(false);
+$('stopBtn').onclick = () => api('/api/job/stop', {}).then(poll);
+init();
+</script>
+</body>
+</html>

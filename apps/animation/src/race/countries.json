@@ -1,0 +1,5596 @@
+{
+ "_note": "Race-only country catalog. Simplified original geometric flags (no coats of arms, no text). Countries without 'flag' use their character from src/engine/characters.ts.",
+ "countries": [
+  {
+   "id": "netherlands",
+   "name": "Netherlands",
+   "continent": "Europe"
+  },
+  {
+   "id": "belgium",
+   "name": "Belgium",
+   "continent": "Europe"
+  },
+  {
+   "id": "germany",
+   "name": "Germany",
+   "continent": "Europe"
+  },
+  {
+   "id": "denmark",
+   "name": "Denmark",
+   "continent": "Europe"
+  },
+  {
+   "id": "norway",
+   "name": "Norway",
+   "continent": "Europe"
+  },
+  {
+   "id": "japan",
+   "name": "Japan",
+   "continent": "Asia"
+  },
+  {
+   "id": "france",
+   "name": "France",
+   "continent": "Europe"
+  },
+  {
+   "id": "spain",
+   "name": "Spain",
+   "continent": "Europe"
+  },
+  {
+   "id": "italy",
+   "name": "Italy",
+   "continent": "Europe"
+  },
+  {
+   "id": "uk",
+   "name": "United Kingdom",
+   "continent": "Europe"
+  },
+  {
+   "id": "portugal",
+   "name": "Portugal",
+   "continent": "Europe"
+  },
+  {
+   "id": "poland",
+   "name": "Poland",
+   "continent": "Europe"
+  },
+  {
+   "id": "sweden",
+   "name": "Sweden",
+   "continent": "Europe"
+  },
+  {
+   "id": "finland",
+   "name": "Finland",
+   "continent": "Europe"
+  },
+  {
+   "id": "iceland",
+   "name": "Iceland",
+   "continent": "Europe"
+  },
+  {
+   "id": "ireland",
+   "name": "Ireland",
+   "continent": "Europe"
+  },
+  {
+   "id": "austria",
+   "name": "Austria",
+   "continent": "Europe"
+  },
+  {
+   "id": "switzerland",
+   "name": "Switzerland",
+   "continent": "Europe"
+  },
+  {
+   "id": "greece",
+   "name": "Greece",
+   "continent": "Europe"
+  },
+  {
+   "id": "russia",
+   "name": "Russia",
+   "continent": "Europe"
+  },
+  {
+   "id": "ukraine",
+   "name": "Ukraine",
+   "continent": "Europe"
+  },
+  {
+   "id": "czechia",
+   "name": "Czechia",
+   "continent": "Europe"
+  },
+  {
+   "id": "hungary",
+   "name": "Hungary",
+   "continent": "Europe"
+  },
+  {
+   "id": "romania",
+   "name": "Romania",
+   "continent": "Europe"
+  },
+  {
+   "id": "bulgaria",
+   "name": "Bulgaria",
+   "continent": "Europe"
+  },
+  {
+   "id": "serbia",
+   "name": "Serbia",
+   "continent": "Europe"
+  },
+  {
+   "id": "croatia",
+   "name": "Croatia",
+   "continent": "Europe"
+  },
+  {
+   "id": "estonia",
+   "name": "Estonia",
+   "continent": "Europe"
+  },
+  {
+   "id": "latvia",
+   "name": "Latvia",
+   "continent": "Europe"
+  },
+  {
+   "id": "lithuania",
+   "name": "Lithuania",
+   "continent": "Europe"
+  },
+  {
+   "id": "usa",
+   "name": "USA",
+   "continent": "Americas"
+  },
+  {
+   "id": "canada",
+   "name": "Canada",
+   "continent": "Americas"
+  },
+  {
+   "id": "mexico",
+   "name": "Mexico",
+   "continent": "Americas"
+  },
+  {
+   "id": "brazil",
+   "name": "Brazil",
+   "continent": "Americas"
+  },
+  {
+   "id": "argentina",
+   "name": "Argentina",
+   "continent": "Americas"
+  },
+  {
+   "id": "colombia",
+   "name": "Colombia",
+   "continent": "Americas"
+  },
+  {
+   "id": "chile",
+   "name": "Chile",
+   "continent": "Americas"
+  },
+  {
+   "id": "peru",
+   "name": "Peru",
+   "continent": "Americas"
+  },
+  {
+   "id": "venezuela",
+   "name": "Venezuela",
+   "continent": "Americas"
+  },
+  {
+   "id": "cuba",
+   "name": "Cuba",
+   "continent": "Americas"
+  },
+  {
+   "id": "pakistan",
+   "name": "Pakistan",
+   "continent": "Asia"
+  },
+  {
+   "id": "india",
+   "name": "India",
+   "continent": "Asia"
+  },
+  {
+   "id": "bangladesh",
+   "name": "Bangladesh",
+   "continent": "Asia"
+  },
+  {
+   "id": "china",
+   "name": "China",
+   "continent": "Asia"
+  },
+  {
+   "id": "south_korea",
+   "name": "South Korea",
+   "continent": "Asia"
+  },
+  {
+   "id": "indonesia",
+   "name": "Indonesia",
+   "continent": "Asia"
+  },
+  {
+   "id": "vietnam",
+   "name": "Vietnam",
+   "continent": "Asia"
+  },
+  {
+   "id": "thailand",
+   "name": "Thailand",
+   "continent": "Asia"
+  },
+  {
+   "id": "philippines",
+   "name": "Philippines",
+   "continent": "Asia"
+  },
+  {
+   "id": "turkey",
+   "name": "Turkey",
+   "continent": "Asia"
+  },
+  {
+   "id": "uae",
+   "name": "UAE",
+   "continent": "Asia"
+  },
+  {
+   "id": "israel",
+   "name": "Israel",
+   "continent": "Asia"
+  },
+  {
+   "id": "egypt",
+   "name": "Egypt",
+   "continent": "Africa"
+  },
+  {
+   "id": "morocco",
+   "name": "Morocco",
+   "continent": "Africa"
+  },
+  {
+   "id": "algeria",
+   "name": "Algeria",
+   "continent": "Africa"
+  },
+  {
+   "id": "nigeria",
+   "name": "Nigeria",
+   "continent": "Africa"
+  },
+  {
+   "id": "kenya",
+   "name": "Kenya",
+   "continent": "Africa"
+  },
+  {
+   "id": "ethiopia",
+   "name": "Ethiopia",
+   "continent": "Africa"
+  },
+  {
+   "id": "australia",
+   "name": "Australia",
+   "continent": "Oceania"
+  },
+  {
+   "id": "new_zealand",
+   "name": "New Zealand",
+   "continent": "Oceania"
+  },
+  {
+   "id": "albania",
+   "name": "Albania",
+   "continent": "Europe",
+   "flag": {
+    "layout": "shapes",
+    "field": "#e41e20",
+    "shapes": [],
+    "extra": [
+     {
+      "kind": "eagle",
+      "color": "#000000",
+      "size": 0.6
+     }
+    ]
+   }
+  },
+  {
+   "id": "andorra",
+   "name": "Andorra",
+   "continent": "Europe",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#10069f",
+     "#fedf00",
+     "#d50032"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#c7a54b",
+     "size": 0.15
+    }
+   }
+  },
+  {
+   "id": "belarus",
+   "name": "Belarus",
+   "continent": "Europe",
+   "flag": {
+    "layout": "hoist-band",
+    "band": "#ffffff",
+    "bandWidth": 0.12,
+    "colors": [
+     "#c8313e",
+     "#4aa657"
+    ],
+    "weights": [
+     2,
+     1
+    ]
+   }
+  },
+  {
+   "id": "bosnia",
+   "name": "Bosnia and Herzegovina",
+   "continent": "Europe",
+   "flag": {
+    "layout": "shapes",
+    "field": "#002395",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -0.3,
+        -1
+       ],
+       [
+        0.62,
+        -1
+       ],
+       [
+        0.62,
+        1
+       ]
+      ],
+      "color": "#fecb00"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.52,
+      "y": -0.86,
+      "size": 0.1
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.33,
+      "y": -0.44,
+      "size": 0.1
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.14,
+      "y": -0.020000000000000018,
+      "size": 0.1
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": 0.050000000000000044,
+      "y": 0.4,
+      "size": 0.1
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": 0.24,
+      "y": 0.82,
+      "size": 0.1
+     }
+    ]
+   }
+  },
+  {
+   "id": "cyprus",
+   "name": "Cyprus",
+   "continent": "Europe",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ffffff",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -0.6,
+        0.0
+       ],
+       [
+        -0.25,
+        -0.2
+       ],
+       [
+        0.3,
+        -0.25
+       ],
+       [
+        0.65,
+        -0.45
+       ],
+       [
+        0.5,
+        -0.12
+       ],
+       [
+        0.15,
+        0.08
+       ],
+       [
+        -0.35,
+        0.12
+       ]
+      ],
+      "color": "#d57800"
+     },
+     {
+      "line": [
+       -0.35,
+       0.4,
+       -0.05,
+       0.3
+      ],
+      "width": 0.07,
+      "color": "#4e5b31"
+     },
+     {
+      "line": [
+       0.35,
+       0.4,
+       0.05,
+       0.3
+      ],
+      "width": 0.07,
+      "color": "#4e5b31"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kosovo",
+   "name": "Kosovo",
+   "continent": "Europe",
+   "flag": {
+    "layout": "shapes",
+    "field": "#244aa5",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -0.32,
+        -0.1
+       ],
+       [
+        0.0,
+        -0.28
+       ],
+       [
+        0.32,
+        -0.12
+       ],
+       [
+        0.26,
+        0.26
+       ],
+       [
+        -0.08,
+        0.38
+       ],
+       [
+        -0.3,
+        0.16
+       ]
+      ],
+      "color": "#d0a650"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.6,
+      "y": -0.5,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.36,
+      "y": -0.532,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.12,
+      "y": -0.5640000000000001,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": 0.12,
+      "y": -0.5640000000000001,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": 0.36,
+      "y": -0.532,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": 0.6,
+      "y": -0.5,
+      "size": 0.08
+     }
+    ]
+   }
+  },
+  {
+   "id": "liechtenstein",
+   "name": "Liechtenstein",
+   "continent": "Europe",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#002b7f",
+     "#ce1126"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#ffd83d",
+     "x": -0.5,
+     "y": -0.5,
+     "size": 0.16
+    }
+   }
+  },
+  {
+   "id": "luxembourg",
+   "name": "Luxembourg",
+   "continent": "Europe",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ed2939",
+     "#ffffff",
+     "#00a1de"
+    ]
+   }
+  },
+  {
+   "id": "malta",
+   "name": "Malta",
+   "continent": "Europe",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#ffffff",
+     "#cf142b"
+    ],
+    "emblem": {
+     "kind": "cross",
+     "color": "#9d9d9d",
+     "x": -0.55,
+     "y": -0.55,
+     "size": 0.18
+    }
+   }
+  },
+  {
+   "id": "moldova",
+   "name": "Moldova",
+   "continent": "Europe",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#0046ae",
+     "#ffd200",
+     "#cc092f"
+    ],
+    "extra": [
+     {
+      "kind": "eagle",
+      "color": "#b07e3c",
+      "size": 0.32
+     }
+    ]
+   }
+  },
+  {
+   "id": "monaco",
+   "name": "Monaco",
+   "continent": "Europe",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ce1126",
+     "#ffffff"
+    ]
+   }
+  },
+  {
+   "id": "montenegro",
+   "name": "Montenegro",
+   "continent": "Europe",
+   "flag": {
+    "layout": "shapes",
+    "field": "#c40308",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       -1,
+       2,
+       0.12
+      ],
+      "color": "#d4af3a"
+     },
+     {
+      "rect": [
+       -1,
+       0.88,
+       2,
+       0.12
+      ],
+      "color": "#d4af3a"
+     },
+     {
+      "rect": [
+       -1,
+       -1,
+       0.12,
+       2
+      ],
+      "color": "#d4af3a"
+     },
+     {
+      "rect": [
+       0.88,
+       -1,
+       0.12,
+       2
+      ],
+      "color": "#d4af3a"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "eagle",
+      "color": "#d4af3a",
+      "size": 0.55
+     }
+    ]
+   }
+  },
+  {
+   "id": "north_macedonia",
+   "name": "North Macedonia",
+   "continent": "Europe",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ce2028",
+    "shapes": [
+     {
+      "line": [
+       0,
+       0,
+       -1,
+       -1
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     },
+     {
+      "line": [
+       0,
+       0,
+       1,
+       -1
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     },
+     {
+      "line": [
+       0,
+       0,
+       -1,
+       1
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     },
+     {
+      "line": [
+       0,
+       0,
+       1,
+       1
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     },
+     {
+      "line": [
+       0,
+       0,
+       0,
+       -1
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     },
+     {
+      "line": [
+       0,
+       0,
+       0,
+       1
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     },
+     {
+      "line": [
+       0,
+       0,
+       -1,
+       0
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     },
+     {
+      "line": [
+       0,
+       0,
+       1,
+       0
+      ],
+      "width": 0.24,
+      "color": "#f9d616"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ce2028",
+      "size": 0.36
+     },
+     {
+      "kind": "disc",
+      "color": "#f9d616",
+      "size": 0.28
+     }
+    ]
+   }
+  },
+  {
+   "id": "san_marino",
+   "name": "San Marino",
+   "continent": "Europe",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ffffff",
+     "#5eb6e4"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#d4af3a",
+     "size": 0.15
+    }
+   }
+  },
+  {
+   "id": "slovakia",
+   "name": "Slovakia",
+   "continent": "Europe",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ffffff",
+     "#0b4ea2",
+     "#ee1c25"
+    ],
+    "extra": [
+     {
+      "kind": "shield",
+      "color": "#ee1c25",
+      "x": -0.35,
+      "size": 0.34,
+      "color2": "#ffffff"
+     }
+    ]
+   }
+  },
+  {
+   "id": "slovenia",
+   "name": "Slovenia",
+   "continent": "Europe",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ffffff",
+     "#005da4",
+     "#ed1c24"
+    ],
+    "extra": [
+     {
+      "kind": "shield",
+      "color": "#005da4",
+      "x": -0.45,
+      "y": -0.3,
+      "size": 0.26,
+      "color2": "#ffffff"
+     }
+    ]
+   }
+  },
+  {
+   "id": "vatican",
+   "name": "Vatican City",
+   "continent": "Europe",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#ffe000",
+     "#ffffff"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#c0a050",
+     "x": 0.5,
+     "size": 0.16
+    }
+   }
+  },
+  {
+   "id": "afghanistan",
+   "name": "Afghanistan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#000000",
+     "#d32011",
+     "#007a36"
+    ],
+    "emblem": {
+     "kind": "ring",
+     "color": "#ffffff",
+     "size": 0.28
+    }
+   }
+  },
+  {
+   "id": "armenia",
+   "name": "Armenia",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#d90012",
+     "#0033a0",
+     "#f2a800"
+    ]
+   }
+  },
+  {
+   "id": "azerbaijan",
+   "name": "Azerbaijan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#00b5e2",
+     "#ef3340",
+     "#509e2f"
+    ],
+    "emblem": {
+     "kind": "crescent-star",
+     "color": "#ffffff",
+     "size": 0.45
+    }
+   }
+  },
+  {
+   "id": "bahrain",
+   "name": "Bahrain",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ce1126",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.45,
+        -1.0
+       ],
+       [
+        -0.2,
+        -0.8
+       ],
+       [
+        -0.45,
+        -0.6
+       ],
+       [
+        -0.2,
+        -0.4
+       ],
+       [
+        -0.45,
+        -0.2
+       ],
+       [
+        -0.2,
+        0.0
+       ],
+       [
+        -0.45,
+        0.2
+       ],
+       [
+        -0.2,
+        0.4
+       ],
+       [
+        -0.45,
+        0.6
+       ],
+       [
+        -0.2,
+        0.8
+       ],
+       [
+        -0.45,
+        1
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffffff"
+     }
+    ]
+   }
+  },
+  {
+   "id": "bhutan",
+   "name": "Bhutan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ff4e12",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -1.0
+       ],
+       [
+        -1.0,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffd520"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "ring",
+      "color": "#ffffff",
+      "size": 0.25
+     }
+    ]
+   }
+  },
+  {
+   "id": "brunei",
+   "name": "Brunei",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#f7e017",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.9,
+        -1.0
+       ],
+       [
+        1.0,
+        -0.05
+       ],
+       [
+        1.0,
+        0.25
+       ],
+       [
+        -1.0,
+        -0.75
+       ]
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "poly": [
+       [
+        1.0,
+        0.25
+       ],
+       [
+        1.0,
+        0.55
+       ],
+       [
+        -1.0,
+        -0.45
+       ],
+       [
+        -1.0,
+        -0.75
+       ]
+      ],
+      "color": "#000000"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#cf1126",
+      "y": 0.05,
+      "size": 0.24
+     }
+    ]
+   }
+  },
+  {
+   "id": "cambodia",
+   "name": "Cambodia",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#032ea1",
+     "#e00025",
+     "#032ea1"
+    ],
+    "weights": [
+     1,
+     2,
+     1
+    ],
+    "extra": [
+     {
+      "kind": "temple",
+      "color": "#ffffff",
+      "size": 0.42
+     }
+    ]
+   }
+  },
+  {
+   "id": "georgia",
+   "name": "Georgia",
+   "continent": "Asia",
+   "flag": {
+    "layout": "cross",
+    "field": "#ffffff",
+    "cross": "#ff0000",
+    "arm": 1,
+    "extra": [
+     {
+      "kind": "cross",
+      "color": "#ff0000",
+      "x": -0.55,
+      "y": -0.55,
+      "size": 0.14
+     },
+     {
+      "kind": "cross",
+      "color": "#ff0000",
+      "x": -0.55,
+      "y": 0.55,
+      "size": 0.14
+     },
+     {
+      "kind": "cross",
+      "color": "#ff0000",
+      "x": 0.55,
+      "y": -0.55,
+      "size": 0.14
+     },
+     {
+      "kind": "cross",
+      "color": "#ff0000",
+      "x": 0.55,
+      "y": 0.55,
+      "size": 0.14
+     }
+    ]
+   }
+  },
+  {
+   "id": "iran",
+   "name": "Iran",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#239f40",
+     "#ffffff",
+     "#da0000"
+    ],
+    "emblem": {
+     "kind": "ring",
+     "color": "#da0000",
+     "size": 0.18
+    }
+   }
+  },
+  {
+   "id": "iraq",
+   "name": "Iraq",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ce1126",
+     "#ffffff",
+     "#000000"
+    ],
+    "over": [
+     {
+      "rect": [
+       -0.5,
+       -0.05,
+       0.25,
+       0.1
+      ],
+      "color": "#007a3d"
+     },
+     {
+      "rect": [
+       -0.12,
+       -0.05,
+       0.25,
+       0.1
+      ],
+      "color": "#007a3d"
+     },
+     {
+      "rect": [
+       0.26,
+       -0.05,
+       0.25,
+       0.1
+      ],
+      "color": "#007a3d"
+     }
+    ]
+   }
+  },
+  {
+   "id": "jordan",
+   "name": "Jordan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#000000",
+     "#ffffff",
+     "#007a3d"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        0.0,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ce1126"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.62,
+      "size": 0.13
+     }
+    ]
+   }
+  },
+  {
+   "id": "kazakhstan",
+   "name": "Kazakhstan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#00afca",
+    "shapes": [
+     {
+      "rect": [
+       -0.92,
+       -1,
+       0.1,
+       2
+      ],
+      "color": "#fec50c"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#fec50c",
+      "x": 0.05,
+      "y": -0.1,
+      "size": 0.26
+     }
+    ]
+   }
+  },
+  {
+   "id": "kuwait",
+   "name": "Kuwait",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#007a3d",
+     "#ffffff",
+     "#ce1126"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.5,
+        -0.33
+       ],
+       [
+        -0.5,
+        0.33
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#000000"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kyrgyzstan",
+   "name": "Kyrgyzstan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#e8112d",
+    "shapes": [],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#ffef00",
+      "size": 0.34
+     }
+    ]
+   }
+  },
+  {
+   "id": "laos",
+   "name": "Laos",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ce1126",
+     "#002868",
+     "#ce1126"
+    ],
+    "weights": [
+     1,
+     2,
+     1
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#ffffff",
+     "size": 0.28
+    }
+   }
+  },
+  {
+   "id": "lebanon",
+   "name": "Lebanon",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ed1c24",
+     "#ffffff",
+     "#ed1c24"
+    ],
+    "weights": [
+     1,
+     2,
+     1
+    ],
+    "extra": [
+     {
+      "kind": "tree",
+      "color": "#00a651",
+      "size": 0.42
+     }
+    ]
+   }
+  },
+  {
+   "id": "malaysia",
+   "name": "Malaysia",
+   "continent": "Asia",
+   "flag": {
+    "layout": "canton-stripes",
+    "stripes": [
+     "#cc0001",
+     "#ffffff"
+    ],
+    "count": 14,
+    "canton": "#010066",
+    "cantonW": 0.5,
+    "cantonH": 0.57,
+    "emblem": {
+     "kind": "crescent-star",
+     "color": "#ffcc00",
+     "size": 0.42
+    }
+   }
+  },
+  {
+   "id": "maldives",
+   "name": "Maldives",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#d21034",
+    "shapes": [
+     {
+      "rect": [
+       -0.6,
+       -0.55,
+       1.2,
+       1.1
+      ],
+      "color": "#007e3a"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "crescent-star",
+      "color": "#ffffff",
+      "x": 0.05,
+      "size": 0.5
+     }
+    ]
+   }
+  },
+  {
+   "id": "mongolia",
+   "name": "Mongolia",
+   "continent": "Asia",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#c4272f",
+     "#015197",
+     "#c4272f"
+    ],
+    "over": [
+     {
+      "rect": [
+       -0.8,
+       -0.15,
+       0.27,
+       0.06
+      ],
+      "color": "#f9cf02"
+     },
+     {
+      "rect": [
+       -0.8,
+       0.3,
+       0.27,
+       0.06
+      ],
+      "color": "#f9cf02"
+     },
+     {
+      "rect": [
+       -0.84,
+       -0.15,
+       0.05,
+       0.51
+      ],
+      "color": "#f9cf02"
+     },
+     {
+      "rect": [
+       -0.55,
+       -0.15,
+       0.05,
+       0.51
+      ],
+      "color": "#f9cf02"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#f9cf02",
+      "x": -0.67,
+      "y": -0.38,
+      "size": 0.11
+     }
+    ]
+   }
+  },
+  {
+   "id": "myanmar",
+   "name": "Myanmar",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#fecb00",
+     "#34b233",
+     "#ea2839"
+    ],
+    "emblem": {
+     "kind": "star",
+     "color": "#ffffff",
+     "y": 0.05,
+     "size": 0.55
+    }
+   }
+  },
+  {
+   "id": "nepal",
+   "name": "Nepal",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ffffff",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -0.9,
+        -1
+       ],
+       [
+        0.85,
+        -0.02
+       ],
+       [
+        -0.05,
+        -0.02
+       ],
+       [
+        0.85,
+        1
+       ],
+       [
+        -0.9,
+        1
+       ]
+      ],
+      "color": "#003893"
+     },
+     {
+      "poly": [
+       [
+        -0.8,
+        -0.82
+       ],
+       [
+        0.6,
+        -0.1
+       ],
+       [
+        -0.25,
+        -0.1
+       ],
+       [
+        0.6,
+        0.9
+       ],
+       [
+        -0.8,
+        0.9
+       ]
+      ],
+      "color": "#dc143c"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffffff",
+      "x": -0.42,
+      "y": -0.36,
+      "size": 0.12
+     },
+     {
+      "kind": "sun",
+      "color": "#ffffff",
+      "x": -0.42,
+      "y": 0.45,
+      "size": 0.14
+     }
+    ]
+   }
+  },
+  {
+   "id": "north_korea",
+   "name": "North Korea",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#024fa2",
+     "#ffffff",
+     "#ed1c27",
+     "#ffffff",
+     "#024fa2"
+    ],
+    "weights": [
+     4,
+     1,
+     11,
+     1,
+     4
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffffff",
+      "x": -0.35,
+      "size": 0.3
+     },
+     {
+      "kind": "star",
+      "color": "#ed1c27",
+      "x": -0.35,
+      "size": 0.27
+     }
+    ]
+   }
+  },
+  {
+   "id": "oman",
+   "name": "Oman",
+   "continent": "Asia",
+   "flag": {
+    "layout": "hoist-band",
+    "band": "#db161b",
+    "bandWidth": 0.3,
+    "colors": [
+     "#ffffff",
+     "#db161b",
+     "#008000"
+    ]
+   }
+  },
+  {
+   "id": "palestine",
+   "name": "Palestine",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#000000",
+     "#ffffff",
+     "#007a3d"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.2,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ce1126"
+     }
+    ]
+   }
+  },
+  {
+   "id": "qatar",
+   "name": "Qatar",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#8d1b3d",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.3,
+        -1.0
+       ],
+       [
+        -0.05,
+        -0.889
+       ],
+       [
+        -0.3,
+        -0.778
+       ],
+       [
+        -0.05,
+        -0.667
+       ],
+       [
+        -0.3,
+        -0.556
+       ],
+       [
+        -0.05,
+        -0.444
+       ],
+       [
+        -0.3,
+        -0.333
+       ],
+       [
+        -0.05,
+        -0.222
+       ],
+       [
+        -0.3,
+        -0.111
+       ],
+       [
+        -0.05,
+        0.0
+       ],
+       [
+        -0.3,
+        0.111
+       ],
+       [
+        -0.05,
+        0.222
+       ],
+       [
+        -0.3,
+        0.333
+       ],
+       [
+        -0.05,
+        0.444
+       ],
+       [
+        -0.3,
+        0.556
+       ],
+       [
+        -0.05,
+        0.667
+       ],
+       [
+        -0.3,
+        0.778
+       ],
+       [
+        -0.05,
+        0.889
+       ],
+       [
+        -0.3,
+        1
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffffff"
+     }
+    ]
+   }
+  },
+  {
+   "id": "saudi_arabia",
+   "name": "Saudi Arabia",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#006c35",
+    "shapes": [
+     {
+      "rect": [
+       -0.5,
+       0.3,
+       1.0,
+       0.07
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "rect": [
+       -0.5,
+       0.25,
+       0.06,
+       0.17
+      ],
+      "color": "#ffffff"
+     }
+    ]
+   }
+  },
+  {
+   "id": "singapore",
+   "name": "Singapore",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ef3340",
+     "#ffffff"
+    ],
+    "extra": [
+     {
+      "kind": "crescent-star",
+      "color": "#ffffff",
+      "x": -0.5,
+      "y": -0.5,
+      "size": 0.42
+     }
+    ]
+   }
+  },
+  {
+   "id": "sri_lanka",
+   "name": "Sri Lanka",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ffb700",
+    "shapes": [
+     {
+      "rect": [
+       -0.9,
+       -0.9,
+       0.3,
+       1.8
+      ],
+      "color": "#00534e"
+     },
+     {
+      "rect": [
+       -0.6,
+       -0.9,
+       0.3,
+       1.8
+      ],
+      "color": "#eb7400"
+     },
+     {
+      "rect": [
+       -0.25,
+       -0.9,
+       1.15,
+       1.8
+      ],
+      "color": "#8d153a"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffb700",
+      "x": 0.33,
+      "size": 0.22
+     }
+    ]
+   }
+  },
+  {
+   "id": "syria",
+   "name": "Syria",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#007a3d",
+     "#ffffff",
+     "#000000"
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ce1126",
+      "x": -0.42,
+      "size": 0.14
+     },
+     {
+      "kind": "star",
+      "color": "#ce1126",
+      "size": 0.14
+     },
+     {
+      "kind": "star",
+      "color": "#ce1126",
+      "x": 0.42,
+      "size": 0.14
+     }
+    ]
+   }
+  },
+  {
+   "id": "taiwan",
+   "name": "Taiwan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "canton-stripes",
+    "stripes": [
+     "#fe0000"
+    ],
+    "count": 1,
+    "canton": "#000095",
+    "cantonW": 0.5,
+    "cantonH": 0.5,
+    "emblem": {
+     "kind": "sun",
+     "color": "#ffffff",
+     "size": 0.42
+    }
+   }
+  },
+  {
+   "id": "tajikistan",
+   "name": "Tajikistan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#cc0000",
+     "#ffffff",
+     "#006600"
+    ],
+    "weights": [
+     2,
+     3,
+     2
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#f8c300",
+     "size": 0.13
+    }
+   }
+  },
+  {
+   "id": "timor_leste",
+   "name": "Timor-Leste",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#dc241f",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        0.0,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffc726"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.38,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#000000"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.74,
+      "size": 0.14
+     }
+    ]
+   }
+  },
+  {
+   "id": "turkmenistan",
+   "name": "Turkmenistan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "shapes",
+    "field": "#00843d",
+    "shapes": [
+     {
+      "rect": [
+       -0.78,
+       -1,
+       0.32,
+       2
+      ],
+      "color": "#d22630"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "crescent-star",
+      "color": "#ffffff",
+      "x": -0.18,
+      "y": -0.5,
+      "size": 0.38
+     }
+    ]
+   }
+  },
+  {
+   "id": "uzbekistan",
+   "name": "Uzbekistan",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#0099b5",
+     "#ce1126",
+     "#ffffff",
+     "#ce1126",
+     "#1eb53a"
+    ],
+    "weights": [
+     10,
+     1,
+     10,
+     1,
+     10
+    ],
+    "extra": [
+     {
+      "kind": "crescent-star",
+      "color": "#ffffff",
+      "x": -0.55,
+      "y": -0.62,
+      "size": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "id": "yemen",
+   "name": "Yemen",
+   "continent": "Asia",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ce1126",
+     "#ffffff",
+     "#000000"
+    ]
+   }
+  },
+  {
+   "id": "angola",
+   "name": "Angola",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#cc092f",
+     "#000000"
+    ],
+    "emblem": {
+     "kind": "star",
+     "color": "#ffcb00",
+     "size": 0.22
+    },
+    "extra": [
+     {
+      "kind": "ring",
+      "color": "#ffcb00",
+      "x": 0.05,
+      "y": 0.05,
+      "size": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "id": "benin",
+   "name": "Benin",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#008751",
+    "shapes": [
+     {
+      "rect": [
+       -0.4,
+       -1,
+       1.4,
+       1
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "rect": [
+       -0.4,
+       0,
+       1.4,
+       1
+      ],
+      "color": "#e8112d"
+     }
+    ]
+   }
+  },
+  {
+   "id": "botswana",
+   "name": "Botswana",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#6da9d2",
+     "#ffffff",
+     "#000000",
+     "#ffffff",
+     "#6da9d2"
+    ],
+    "weights": [
+     9,
+     1,
+     4,
+     1,
+     9
+    ]
+   }
+  },
+  {
+   "id": "burkina_faso",
+   "name": "Burkina Faso",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ef2b2d",
+     "#009e49"
+    ],
+    "emblem": {
+     "kind": "star",
+     "color": "#fcd116",
+     "size": 0.26
+    }
+   }
+  },
+  {
+   "id": "burundi",
+   "name": "Burundi",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ce1126",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        0.0,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#1eb53a"
+     },
+     {
+      "poly": [
+       [
+        1,
+        -1
+       ],
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        1
+       ]
+      ],
+      "color": "#1eb53a"
+     },
+     {
+      "line": [
+       -1,
+       -1,
+       1,
+       1
+      ],
+      "width": 0.26,
+      "color": "#ffffff"
+     },
+     {
+      "line": [
+       1,
+       -1,
+       -1,
+       1
+      ],
+      "width": 0.26,
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffffff",
+      "size": 0.42
+     },
+     {
+      "kind": "star",
+      "color": "#ce1126",
+      "y": -0.17,
+      "size": 0.1
+     },
+     {
+      "kind": "star",
+      "color": "#ce1126",
+      "x": -0.15,
+      "y": 0.1,
+      "size": 0.1
+     },
+     {
+      "kind": "star",
+      "color": "#ce1126",
+      "x": 0.15,
+      "y": 0.1,
+      "size": 0.1
+     }
+    ]
+   }
+  },
+  {
+   "id": "cameroon",
+   "name": "Cameroon",
+   "continent": "Africa",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#007a5e",
+     "#ce1126",
+     "#fcd116"
+    ],
+    "emblem": {
+     "kind": "star",
+     "color": "#fcd116",
+     "size": 0.22
+    }
+   }
+  },
+  {
+   "id": "cape_verde",
+   "name": "Cape Verde",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#003893",
+     "#ffffff",
+     "#cf2027",
+     "#ffffff",
+     "#003893"
+    ],
+    "weights": [
+     6,
+     1,
+     1,
+     1,
+     3
+    ],
+    "extra": [
+     {
+      "kind": "ring",
+      "color": "#f7d116",
+      "x": -0.25,
+      "y": 0.2,
+      "size": 0.32
+     }
+    ]
+   }
+  },
+  {
+   "id": "central_african_republic",
+   "name": "Central African Republic",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#003082",
+     "#ffffff",
+     "#289728",
+     "#ffce00"
+    ],
+    "over": [
+     {
+      "rect": [
+       -0.15,
+       -1,
+       0.3,
+       2
+      ],
+      "color": "#d21034"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffce00",
+      "x": -0.6,
+      "y": -0.75,
+      "size": 0.13
+     }
+    ]
+   }
+  },
+  {
+   "id": "chad",
+   "name": "Chad",
+   "continent": "Africa",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#002664",
+     "#fecb00",
+     "#c60c30"
+    ]
+   }
+  },
+  {
+   "id": "comoros",
+   "name": "Comoros",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ffc61e",
+     "#ffffff",
+     "#ce1126",
+     "#3a75c4"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.05,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#3d8e33"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "crescent-star",
+      "color": "#ffffff",
+      "x": -0.62,
+      "size": 0.38
+     }
+    ]
+   }
+  },
+  {
+   "id": "dr_congo",
+   "name": "DR Congo",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#007fff",
+    "shapes": [
+     {
+      "poly": [
+       [
+        0.5,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.5
+       ],
+       [
+        -0.5,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.5
+       ]
+      ],
+      "color": "#f7d618"
+     },
+     {
+      "poly": [
+       [
+        0.66,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.66
+       ],
+       [
+        -0.66,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.66
+       ]
+      ],
+      "color": "#ce1021"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#f7d618",
+      "x": -0.58,
+      "y": -0.58,
+      "size": 0.26
+     }
+    ]
+   }
+  },
+  {
+   "id": "congo",
+   "name": "Republic of the Congo",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#dc241f",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        0.6,
+        -1.0
+       ],
+       [
+        -1.0,
+        0.6
+       ]
+      ],
+      "color": "#009543"
+     },
+     {
+      "poly": [
+       [
+        0.6,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.6
+       ],
+       [
+        -0.6,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.6
+       ]
+      ],
+      "color": "#fbde4a"
+     }
+    ]
+   }
+  },
+  {
+   "id": "djibouti",
+   "name": "Djibouti",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#6ab2e7",
+     "#12ad2b"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        0.0,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#d7141a",
+      "x": -0.66,
+      "size": 0.15
+     }
+    ]
+   }
+  },
+  {
+   "id": "equatorial_guinea",
+   "name": "Equatorial Guinea",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#3e9a00",
+     "#ffffff",
+     "#e32118"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.45,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#0073ce"
+     }
+    ]
+   }
+  },
+  {
+   "id": "eritrea",
+   "name": "Eritrea",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#12ad2b",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       0,
+       2,
+       1
+      ],
+      "color": "#4189dd"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ea0437"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "ring",
+      "color": "#ffc726",
+      "x": -0.5,
+      "size": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "id": "eswatini",
+   "name": "Eswatini",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#3e5eb9",
+     "#ffd900",
+     "#b10c0c",
+     "#ffd900",
+     "#3e5eb9"
+    ],
+    "weights": [
+     3,
+     1,
+     8,
+     1,
+     3
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -0.55,
+        0
+       ],
+       [
+        0,
+        -0.25
+       ],
+       [
+        0.55,
+        0
+       ],
+       [
+        0,
+        0.25
+       ]
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "poly": [
+       [
+        0,
+        -0.25
+       ],
+       [
+        0.55,
+        0
+       ],
+       [
+        0,
+        0.25
+       ]
+      ],
+      "color": "#000000"
+     }
+    ]
+   }
+  },
+  {
+   "id": "gabon",
+   "name": "Gabon",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#009e60",
+     "#fcd116",
+     "#3a75c4"
+    ]
+   }
+  },
+  {
+   "id": "gambia",
+   "name": "Gambia",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ce1126",
+     "#ffffff",
+     "#0c1c8c",
+     "#ffffff",
+     "#3a7728"
+    ],
+    "weights": [
+     6,
+     1,
+     4,
+     1,
+     6
+    ]
+   }
+  },
+  {
+   "id": "ghana",
+   "name": "Ghana",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ce1126",
+     "#fcd116",
+     "#006b3f"
+    ],
+    "emblem": {
+     "kind": "star",
+     "color": "#000000",
+     "size": 0.24
+    }
+   }
+  },
+  {
+   "id": "guinea",
+   "name": "Guinea",
+   "continent": "Africa",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#ce1126",
+     "#fcd116",
+     "#009460"
+    ]
+   }
+  },
+  {
+   "id": "guinea_bissau",
+   "name": "Guinea-Bissau",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#fcd116",
+     "#009e49"
+    ],
+    "over": [
+     {
+      "rect": [
+       -1,
+       -1,
+       0.66,
+       2
+      ],
+      "color": "#ce1126"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#000000",
+      "x": -0.67,
+      "size": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "id": "ivory_coast",
+   "name": "Ivory Coast",
+   "continent": "Africa",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#f77f00",
+     "#ffffff",
+     "#009e60"
+    ]
+   }
+  },
+  {
+   "id": "lesotho",
+   "name": "Lesotho",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#00209f",
+     "#ffffff",
+     "#009543"
+    ],
+    "weights": [
+     3,
+     4,
+     3
+    ],
+    "extra": [
+     {
+      "kind": "hat",
+      "color": "#000000",
+      "size": 0.36
+     }
+    ]
+   }
+  },
+  {
+   "id": "liberia",
+   "name": "Liberia",
+   "continent": "Africa",
+   "flag": {
+    "layout": "canton-stripes",
+    "stripes": [
+     "#bf0a30",
+     "#ffffff"
+    ],
+    "count": 11,
+    "canton": "#002868",
+    "cantonW": 0.37,
+    "cantonH": 0.45,
+    "emblem": {
+     "kind": "star",
+     "color": "#ffffff",
+     "size": 0.3
+    }
+   }
+  },
+  {
+   "id": "libya",
+   "name": "Libya",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#e70013",
+     "#000000",
+     "#239e46"
+    ],
+    "weights": [
+     1,
+     2,
+     1
+    ],
+    "emblem": {
+     "kind": "crescent-star",
+     "color": "#ffffff",
+     "size": 0.45
+    }
+   }
+  },
+  {
+   "id": "madagascar",
+   "name": "Madagascar",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#fc3d32",
+     "#007e3a"
+    ],
+    "over": [
+     {
+      "rect": [
+       -1,
+       -1,
+       0.66,
+       2
+      ],
+      "color": "#ffffff"
+     }
+    ]
+   }
+  },
+  {
+   "id": "malawi",
+   "name": "Malawi",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#000000",
+     "#ce1126",
+     "#339e35"
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#ce1126",
+      "y": -0.67,
+      "size": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "id": "mali",
+   "name": "Mali",
+   "continent": "Africa",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#14b53a",
+     "#fcd116",
+     "#ce1126"
+    ]
+   }
+  },
+  {
+   "id": "mauritania",
+   "name": "Mauritania",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#d01c1f",
+     "#00a95c",
+     "#d01c1f"
+    ],
+    "weights": [
+     1,
+     4,
+     1
+    ],
+    "emblem": {
+     "kind": "crescent-star",
+     "color": "#ffd700",
+     "size": 0.5
+    }
+   }
+  },
+  {
+   "id": "mauritius",
+   "name": "Mauritius",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ea2839",
+     "#1a206d",
+     "#ffd500",
+     "#00a551"
+    ]
+   }
+  },
+  {
+   "id": "mozambique",
+   "name": "Mozambique",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#009a44",
+     "#ffffff",
+     "#000000",
+     "#ffffff",
+     "#fce100"
+    ],
+    "weights": [
+     6,
+     1,
+     6,
+     1,
+     6
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.2,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#d21034"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#fce100",
+      "x": -0.7,
+      "size": 0.18
+     }
+    ]
+   }
+  },
+  {
+   "id": "namibia",
+   "name": "Namibia",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#003580",
+    "shapes": [
+     {
+      "poly": [
+       [
+        1.0,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        1.0
+       ]
+      ],
+      "color": "#009543"
+     },
+     {
+      "poly": [
+       [
+        0.5,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.5
+       ],
+       [
+        -0.5,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.5
+       ]
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "poly": [
+       [
+        0.66,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.66
+       ],
+       [
+        -0.66,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.66
+       ]
+      ],
+      "color": "#d21034"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#ffce00",
+      "x": -0.6,
+      "y": -0.6,
+      "size": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "id": "niger",
+   "name": "Niger",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#e05206",
+     "#ffffff",
+     "#0db02b"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#e05206",
+     "size": 0.18
+    }
+   }
+  },
+  {
+   "id": "rwanda",
+   "name": "Rwanda",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#00a1de",
+     "#fad201",
+     "#20603d"
+    ],
+    "weights": [
+     2,
+     1,
+     1
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#fad201",
+      "x": 0.55,
+      "y": -0.5,
+      "size": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "id": "sao_tome",
+   "name": "Sao Tome and Principe",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#12ad2b",
+     "#ffce00",
+     "#12ad2b"
+    ],
+    "weights": [
+     2,
+     3,
+     2
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.4,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#d21034"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#000000",
+      "x": 0.05,
+      "size": 0.15
+     },
+     {
+      "kind": "star",
+      "color": "#000000",
+      "x": 0.55,
+      "size": 0.15
+     }
+    ]
+   }
+  },
+  {
+   "id": "senegal",
+   "name": "Senegal",
+   "continent": "Africa",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#00853f",
+     "#fdef42",
+     "#e31b23"
+    ],
+    "emblem": {
+     "kind": "star",
+     "color": "#00853f",
+     "size": 0.2
+    }
+   }
+  },
+  {
+   "id": "seychelles",
+   "name": "Seychelles",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#007a3d",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        1
+       ],
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.33,
+        -1
+       ]
+      ],
+      "color": "#003f87"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        1
+       ],
+       [
+        -0.33,
+        -1
+       ],
+       [
+        0.33,
+        -1
+       ]
+      ],
+      "color": "#fcd856"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        1
+       ],
+       [
+        0.33,
+        -1
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1,
+        -0.33
+       ]
+      ],
+      "color": "#d62828"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        1
+       ],
+       [
+        1,
+        -0.33
+       ],
+       [
+        1,
+        0.33
+       ]
+      ],
+      "color": "#ffffff"
+     }
+    ]
+   }
+  },
+  {
+   "id": "sierra_leone",
+   "name": "Sierra Leone",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#1eb53a",
+     "#ffffff",
+     "#0072c6"
+    ]
+   }
+  },
+  {
+   "id": "somalia",
+   "name": "Somalia",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#4189dd",
+    "shapes": [],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "size": 0.42
+     }
+    ]
+   }
+  },
+  {
+   "id": "south_africa",
+   "name": "South Africa",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ffffff",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       -1,
+       2,
+       0.8
+      ],
+      "color": "#e03c31"
+     },
+     {
+      "rect": [
+       -1,
+       0.2,
+       2,
+       0.8
+      ],
+      "color": "#001489"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.55,
+        -1
+       ],
+       [
+        0.1,
+        -0.27
+       ],
+       [
+        1,
+        -0.27
+       ],
+       [
+        1,
+        0.27
+       ],
+       [
+        0.1,
+        0.27
+       ],
+       [
+        -0.55,
+        1
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.75,
+        -1
+       ],
+       [
+        0.0,
+        -0.17
+       ],
+       [
+        1,
+        -0.17
+       ],
+       [
+        1,
+        0.17
+       ],
+       [
+        0.0,
+        0.17
+       ],
+       [
+        -0.75,
+        1
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#007749"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -0.7
+       ],
+       [
+        -0.15,
+        0
+       ],
+       [
+        -1,
+        0.7
+       ]
+      ],
+      "color": "#ffb81c"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -0.55
+       ],
+       [
+        -0.35,
+        0
+       ],
+       [
+        -1,
+        0.55
+       ]
+      ],
+      "color": "#000000"
+     }
+    ]
+   }
+  },
+  {
+   "id": "south_sudan",
+   "name": "South Sudan",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#000000",
+     "#ffffff",
+     "#da121a",
+     "#ffffff",
+     "#078930"
+    ],
+    "weights": [
+     6,
+     1,
+     6,
+     1,
+     6
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.15,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#0f47af"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#fcdd09",
+      "x": -0.66,
+      "size": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "id": "sudan",
+   "name": "Sudan",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#d21034",
+     "#ffffff",
+     "#000000"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.3,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#007229"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tanzania",
+   "name": "Tanzania",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#1eb53a",
+    "shapes": [
+     {
+      "poly": [
+       [
+        1.0,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        1.0
+       ]
+      ],
+      "color": "#00a3dd"
+     },
+     {
+      "poly": [
+       [
+        0.5,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.5
+       ],
+       [
+        -0.5,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.5
+       ]
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "poly": [
+       [
+        0.64,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.64
+       ],
+       [
+        -0.64,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.64
+       ]
+      ],
+      "color": "#000000"
+     }
+    ]
+   }
+  },
+  {
+   "id": "togo",
+   "name": "Togo",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#006a4e",
+     "#ffce00",
+     "#006a4e",
+     "#ffce00",
+     "#006a4e"
+    ],
+    "over": [
+     {
+      "rect": [
+       -1,
+       -1,
+       0.8,
+       1.2
+      ],
+      "color": "#d21034"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.6,
+      "y": -0.4,
+      "size": 0.26
+     }
+    ]
+   }
+  },
+  {
+   "id": "tunisia",
+   "name": "Tunisia",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#e70013",
+    "shapes": [],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffffff",
+      "size": 0.42
+     },
+     {
+      "kind": "crescent-star",
+      "color": "#e70013",
+      "size": 0.5
+     }
+    ]
+   }
+  },
+  {
+   "id": "uganda",
+   "name": "Uganda",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#000000",
+     "#fcdc04",
+     "#d90000",
+     "#000000",
+     "#fcdc04",
+     "#d90000"
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffffff",
+      "size": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "id": "zambia",
+   "name": "Zambia",
+   "continent": "Africa",
+   "flag": {
+    "layout": "shapes",
+    "field": "#198a00",
+    "shapes": [
+     {
+      "rect": [
+       0.25,
+       -0.1,
+       0.25,
+       1.1
+      ],
+      "color": "#de2010"
+     },
+     {
+      "rect": [
+       0.5,
+       -0.1,
+       0.25,
+       1.1
+      ],
+      "color": "#000000"
+     },
+     {
+      "rect": [
+       0.75,
+       -0.1,
+       0.25,
+       1.1
+      ],
+      "color": "#ef7d00"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "eagle",
+      "color": "#ef7d00",
+      "x": 0.6,
+      "y": -0.55,
+      "size": 0.26
+     }
+    ]
+   }
+  },
+  {
+   "id": "zimbabwe",
+   "name": "Zimbabwe",
+   "continent": "Africa",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#006400",
+     "#ffd200",
+     "#d40000",
+     "#000000",
+     "#d40000",
+     "#ffd200",
+     "#006400"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.05,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#000000"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.15,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#d40000",
+      "x": -0.68,
+      "size": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "id": "antigua",
+   "name": "Antigua and Barbuda",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ce1126",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        0.6,
+        -0.2
+       ],
+       [
+        -0.6,
+        -0.2
+       ]
+      ],
+      "color": "#000000"
+     },
+     {
+      "poly": [
+       [
+        -0.6,
+        -0.2
+       ],
+       [
+        0.6,
+        -0.2
+       ],
+       [
+        0.4,
+        0.2
+       ],
+       [
+        -0.4,
+        0.2
+       ]
+      ],
+      "color": "#0072c6"
+     },
+     {
+      "poly": [
+       [
+        -0.4,
+        0.2
+       ],
+       [
+        0.4,
+        0.2
+       ],
+       [
+        0,
+        1
+       ]
+      ],
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#fcd116",
+      "y": -0.45,
+      "size": 0.26
+     }
+    ]
+   }
+  },
+  {
+   "id": "bahamas",
+   "name": "Bahamas",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#00abc9",
+     "#fae042",
+     "#00abc9"
+    ],
+    "over": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.1,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#000000"
+     }
+    ]
+   }
+  },
+  {
+   "id": "barbados",
+   "name": "Barbados",
+   "continent": "Americas",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#00267f",
+     "#ffc726",
+     "#00267f"
+    ],
+    "extra": [
+     {
+      "kind": "trident",
+      "color": "#000000",
+      "size": 0.4
+     }
+    ]
+   }
+  },
+  {
+   "id": "belize",
+   "name": "Belize",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#003f87",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       -1,
+       2,
+       0.16
+      ],
+      "color": "#ce1126"
+     },
+     {
+      "rect": [
+       -1,
+       0.84,
+       2,
+       0.16
+      ],
+      "color": "#ce1126"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffffff",
+      "size": 0.45
+     },
+     {
+      "kind": "ring",
+      "color": "#3a7d44",
+      "size": 0.4
+     }
+    ]
+   }
+  },
+  {
+   "id": "bolivia",
+   "name": "Bolivia",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#d52b1e",
+     "#f9e300",
+     "#007934"
+    ]
+   }
+  },
+  {
+   "id": "costa_rica",
+   "name": "Costa Rica",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#002b7f",
+     "#ffffff",
+     "#ce1126",
+     "#ffffff",
+     "#002b7f"
+    ],
+    "weights": [
+     1,
+     1,
+     2,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "id": "dominica",
+   "name": "Dominica",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#006b3f",
+    "shapes": [
+     {
+      "rect": [
+       -0.27,
+       -1,
+       0.18,
+       2
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "rect": [
+       -1,
+       -0.27,
+       2,
+       0.18
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "rect": [
+       -0.09000000000000002,
+       -1,
+       0.18,
+       2
+      ],
+      "color": "#000000"
+     },
+     {
+      "rect": [
+       -1,
+       -0.09000000000000002,
+       2,
+       0.18
+      ],
+      "color": "#000000"
+     },
+     {
+      "rect": [
+       0.08999999999999997,
+       -1,
+       0.18,
+       2
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "rect": [
+       -1,
+       0.08999999999999997,
+       2,
+       0.18
+      ],
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#d41c30",
+      "size": 0.36
+     },
+     {
+      "kind": "disc",
+      "color": "#006b3f",
+      "size": 0.12
+     }
+    ]
+   }
+  },
+  {
+   "id": "dominican_republic",
+   "name": "Dominican Republic",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ffffff",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       -1,
+       0.88,
+       0.88
+      ],
+      "color": "#002d62"
+     },
+     {
+      "rect": [
+       0.12,
+       -1,
+       0.88,
+       0.88
+      ],
+      "color": "#ce1126"
+     },
+     {
+      "rect": [
+       -1,
+       0.12,
+       0.88,
+       0.88
+      ],
+      "color": "#ce1126"
+     },
+     {
+      "rect": [
+       0.12,
+       0.12,
+       0.88,
+       0.88
+      ],
+      "color": "#002d62"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#00843d",
+      "size": 0.1
+     }
+    ]
+   }
+  },
+  {
+   "id": "ecuador",
+   "name": "Ecuador",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ffdd00",
+     "#034ea2",
+     "#ed1c24"
+    ],
+    "weights": [
+     2,
+     1,
+     1
+    ],
+    "extra": [
+     {
+      "kind": "eagle",
+      "color": "#8b6a3c",
+      "y": -0.05,
+      "size": 0.32
+     }
+    ]
+   }
+  },
+  {
+   "id": "el_salvador",
+   "name": "El Salvador",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#0047ab",
+     "#ffffff",
+     "#0047ab"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#c8a951",
+     "size": 0.13
+    }
+   }
+  },
+  {
+   "id": "grenada",
+   "name": "Grenada",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ce1126",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       -1,
+       2,
+       2
+      ],
+      "color": "#ce1126"
+     },
+     {
+      "poly": [
+       [
+        -0.8,
+        -0.8
+       ],
+       [
+        0.8,
+        -0.8
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "poly": [
+       [
+        -0.8,
+        0.8
+       ],
+       [
+        0.8,
+        0.8
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "poly": [
+       [
+        -0.8,
+        -0.8
+       ],
+       [
+        -0.8,
+        0.8
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "color": "#007a5e"
+     },
+     {
+      "poly": [
+       [
+        0.8,
+        -0.8
+       ],
+       [
+        0.8,
+        0.8
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "color": "#007a5e"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ce1126",
+      "size": 0.24
+     },
+     {
+      "kind": "star",
+      "color": "#fcd116",
+      "size": 0.18
+     },
+     {
+      "kind": "star",
+      "color": "#fcd116",
+      "x": -0.4,
+      "y": -0.9,
+      "size": 0.07
+     },
+     {
+      "kind": "star",
+      "color": "#fcd116",
+      "y": -0.9,
+      "size": 0.07
+     },
+     {
+      "kind": "star",
+      "color": "#fcd116",
+      "x": 0.4,
+      "y": -0.9,
+      "size": 0.07
+     }
+    ]
+   }
+  },
+  {
+   "id": "guatemala",
+   "name": "Guatemala",
+   "continent": "Americas",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#4997d0",
+     "#ffffff",
+     "#4997d0"
+    ],
+    "emblem": {
+     "kind": "ring",
+     "color": "#5a9e3a",
+     "size": 0.2
+    }
+   }
+  },
+  {
+   "id": "guyana",
+   "name": "Guyana",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#009e49",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -0.9
+       ],
+       [
+        0.85,
+        0
+       ],
+       [
+        -1,
+        0.9
+       ]
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        0.05,
+        0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#000000"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -0.88
+       ],
+       [
+        -0.06,
+        0
+       ],
+       [
+        -1,
+        0.88
+       ]
+      ],
+      "color": "#ce1126"
+     }
+    ]
+   }
+  },
+  {
+   "id": "haiti",
+   "name": "Haiti",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#00209f",
+     "#d21034"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#ffffff",
+     "size": 0.25
+    }
+   }
+  },
+  {
+   "id": "honduras",
+   "name": "Honduras",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#0073cf",
+     "#ffffff",
+     "#0073cf"
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#0073cf",
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#0073cf",
+      "x": -0.3,
+      "y": -0.12,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#0073cf",
+      "x": -0.3,
+      "y": 0.12,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#0073cf",
+      "x": 0.3,
+      "y": -0.12,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#0073cf",
+      "x": 0.3,
+      "y": 0.12,
+      "size": 0.08
+     }
+    ]
+   }
+  },
+  {
+   "id": "jamaica",
+   "name": "Jamaica",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#000000",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "color": "#009b3a"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        1
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        0,
+        0
+       ]
+      ],
+      "color": "#009b3a"
+     },
+     {
+      "line": [
+       -1,
+       -1,
+       1,
+       1
+      ],
+      "width": 0.3,
+      "color": "#fed100"
+     },
+     {
+      "line": [
+       1,
+       -1,
+       -1,
+       1
+      ],
+      "width": 0.3,
+      "color": "#fed100"
+     }
+    ]
+   }
+  },
+  {
+   "id": "nicaragua",
+   "name": "Nicaragua",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#0067c6",
+     "#ffffff",
+     "#0067c6"
+    ],
+    "emblem": {
+     "kind": "disc",
+     "color": "#c8a951",
+     "size": 0.13
+    }
+   }
+  },
+  {
+   "id": "panama",
+   "name": "Panama",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ffffff",
+    "shapes": [
+     {
+      "rect": [
+       0,
+       -1,
+       1,
+       1
+      ],
+      "color": "#d21034"
+     },
+     {
+      "rect": [
+       -1,
+       0,
+       1,
+       1
+      ],
+      "color": "#005293"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#005293",
+      "x": -0.5,
+      "y": -0.5,
+      "size": 0.26
+     },
+     {
+      "kind": "star",
+      "color": "#d21034",
+      "x": 0.5,
+      "y": 0.5,
+      "size": 0.26
+     }
+    ]
+   }
+  },
+  {
+   "id": "paraguay",
+   "name": "Paraguay",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#d52b1e",
+     "#ffffff",
+     "#0038a8"
+    ],
+    "emblem": {
+     "kind": "ring",
+     "color": "#e5b43a",
+     "size": 0.18
+    }
+   }
+  },
+  {
+   "id": "saint_kitts",
+   "name": "Saint Kitts and Nevis",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#009e49",
+    "shapes": [
+     {
+      "poly": [
+       [
+        1.0,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        1.0
+       ]
+      ],
+      "color": "#ce1126"
+     },
+     {
+      "poly": [
+       [
+        0.5,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.5
+       ],
+       [
+        -0.5,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.5
+       ]
+      ],
+      "color": "#fcd116"
+     },
+     {
+      "poly": [
+       [
+        0.62,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.62
+       ],
+       [
+        -0.62,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.62
+       ]
+      ],
+      "color": "#000000"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.22,
+      "y": 0.22,
+      "size": 0.12
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": 0.22,
+      "y": -0.22,
+      "size": 0.12
+     }
+    ]
+   }
+  },
+  {
+   "id": "saint_lucia",
+   "name": "Saint Lucia",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#65cfff",
+    "shapes": [
+     {
+      "poly": [
+       [
+        0,
+        -0.75
+       ],
+       [
+        0.5,
+        0.75
+       ],
+       [
+        -0.5,
+        0.75
+       ]
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "poly": [
+       [
+        0,
+        -0.6
+       ],
+       [
+        0.38,
+        0.75
+       ],
+       [
+        -0.38,
+        0.75
+       ]
+      ],
+      "color": "#000000"
+     },
+     {
+      "poly": [
+       [
+        0,
+        0
+       ],
+       [
+        0.5,
+        0.75
+       ],
+       [
+        -0.5,
+        0.75
+       ]
+      ],
+      "color": "#fcd116"
+     }
+    ]
+   }
+  },
+  {
+   "id": "saint_vincent",
+   "name": "Saint Vincent and the Grenadines",
+   "continent": "Americas",
+   "flag": {
+    "layout": "v-stripes",
+    "colors": [
+     "#002674",
+     "#fcd022",
+     "#009e60"
+    ],
+    "weights": [
+     1,
+     2,
+     1
+    ],
+    "extra": [
+     {
+      "kind": "diamond",
+      "color": "#009e60",
+      "x": -0.17,
+      "y": -0.1,
+      "size": 0.12
+     },
+     {
+      "kind": "diamond",
+      "color": "#009e60",
+      "x": 0.17,
+      "y": -0.1,
+      "size": 0.12
+     },
+     {
+      "kind": "diamond",
+      "color": "#009e60",
+      "y": 0.25,
+      "size": 0.12
+     }
+    ]
+   }
+  },
+  {
+   "id": "suriname",
+   "name": "Suriname",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#377e3f",
+     "#ffffff",
+     "#b40a2d",
+     "#ffffff",
+     "#377e3f"
+    ],
+    "weights": [
+     2,
+     1,
+     4,
+     1,
+     2
+    ],
+    "emblem": {
+     "kind": "star",
+     "color": "#ecc81d",
+     "size": 0.3
+    }
+   }
+  },
+  {
+   "id": "trinidad",
+   "name": "Trinidad and Tobago",
+   "continent": "Americas",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ce1126",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.5,
+        -1.0
+       ],
+       [
+        1.0,
+        0.5
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        0.5,
+        1.0
+       ],
+       [
+        -1.0,
+        -0.5
+       ]
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        -0.64,
+        -1.0
+       ],
+       [
+        1.0,
+        0.64
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        0.64,
+        1.0
+       ],
+       [
+        -1.0,
+        -0.64
+       ]
+      ],
+      "color": "#000000"
+     }
+    ]
+   }
+  },
+  {
+   "id": "uruguay",
+   "name": "Uruguay",
+   "continent": "Americas",
+   "flag": {
+    "layout": "h-stripes",
+    "colors": [
+     "#ffffff",
+     "#0038a8",
+     "#ffffff",
+     "#0038a8",
+     "#ffffff",
+     "#0038a8",
+     "#ffffff",
+     "#0038a8",
+     "#ffffff"
+    ],
+    "over": [
+     {
+      "rect": [
+       -1,
+       -1,
+       0.9,
+       1.1
+      ],
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#fcd116",
+      "x": -0.55,
+      "y": -0.45,
+      "size": 0.26
+     }
+    ]
+   }
+  },
+  {
+   "id": "fiji",
+   "name": "Fiji",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "union-canton",
+    "field": "#68bfe5",
+    "extra": [
+     {
+      "kind": "shield",
+      "color": "#ffffff",
+      "x": 0.5,
+      "y": 0.25,
+      "size": 0.3,
+      "color2": "#ce1126"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kiribati",
+   "name": "Kiribati",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#ce1126",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       0.1,
+       2,
+       0.9
+      ],
+      "color": "#003f87"
+     },
+     {
+      "rect": [
+       -1,
+       0.3,
+       2,
+       0.1
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "rect": [
+       -1,
+       0.55,
+       2,
+       0.1
+      ],
+      "color": "#ffffff"
+     },
+     {
+      "rect": [
+       -1,
+       0.8,
+       2,
+       0.1
+      ],
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#fcd116",
+      "y": -0.1,
+      "size": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "id": "marshall_islands",
+   "name": "Marshall Islands",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#003893",
+    "shapes": [
+     {
+      "poly": [
+       [
+        1.0,
+        -0.4
+       ],
+       [
+        1.0,
+        -0.12
+       ],
+       [
+        -1.0,
+        0.88
+       ],
+       [
+        -1.0,
+        0.6
+       ]
+      ],
+      "color": "#dd7500"
+     },
+     {
+      "poly": [
+       [
+        1.0,
+        -0.68
+       ],
+       [
+        1.0,
+        -0.4
+       ],
+       [
+        -1.0,
+        0.6
+       ],
+       [
+        -1.0,
+        0.32
+       ]
+      ],
+      "color": "#ffffff"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "sun",
+      "color": "#ffffff",
+      "x": -0.5,
+      "y": -0.5,
+      "size": 0.22
+     }
+    ]
+   }
+  },
+  {
+   "id": "micronesia",
+   "name": "Micronesia",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#75b2dd",
+    "shapes": [],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "y": -0.5,
+      "size": 0.15
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": 0.5,
+      "size": 0.15
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "y": 0.5,
+      "size": 0.15
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.5,
+      "size": 0.15
+     }
+    ]
+   }
+  },
+  {
+   "id": "nauru",
+   "name": "Nauru",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#002b7f",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       -0.06,
+       2,
+       0.12
+      ],
+      "color": "#ffc61e"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.5,
+      "y": 0.45,
+      "size": 0.22
+     }
+    ]
+   }
+  },
+  {
+   "id": "palau",
+   "name": "Palau",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#4aadd6",
+    "shapes": [],
+    "extra": [
+     {
+      "kind": "disc",
+      "color": "#ffde00",
+      "x": -0.15,
+      "size": 0.45
+     }
+    ]
+   }
+  },
+  {
+   "id": "papua_new_guinea",
+   "name": "Papua New Guinea",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#000000",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        1.0,
+        1.0
+       ],
+       [
+        -1.0,
+        -1.0
+       ]
+      ],
+      "color": "#ce1126"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.5,
+      "y": 0.1,
+      "size": 0.09
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.3,
+      "y": 0.35,
+      "size": 0.09
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.55,
+      "y": 0.55,
+      "size": 0.09
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.7,
+      "y": 0.3,
+      "size": 0.09
+     },
+     {
+      "kind": "eagle",
+      "color": "#fcd116",
+      "x": 0.4,
+      "y": -0.4,
+      "size": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "id": "samoa",
+   "name": "Samoa",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "canton-stripes",
+    "stripes": [
+     "#ce1126"
+    ],
+    "count": 1,
+    "canton": "#002b7f",
+    "cantonW": 0.5,
+    "cantonH": 0.5,
+    "emblem": {
+     "kind": "star",
+     "color": "#ffffff",
+     "size": 0.3
+    }
+   }
+  },
+  {
+   "id": "solomon_islands",
+   "name": "Solomon Islands",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#215b33",
+    "shapes": [
+     {
+      "poly": [
+       [
+        -1,
+        -1
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -1.0
+       ],
+       [
+        -1.0,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ]
+      ],
+      "color": "#0051ba"
+     },
+     {
+      "poly": [
+       [
+        0.9,
+        -1.0
+       ],
+       [
+        1,
+        -1
+       ],
+       [
+        1.0,
+        -0.9
+       ],
+       [
+        -0.9,
+        1.0
+       ],
+       [
+        -1,
+        1
+       ],
+       [
+        -1.0,
+        0.9
+       ]
+      ],
+      "color": "#fcd116"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.72,
+      "y": -0.72,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.4,
+      "y": -0.72,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.56,
+      "y": -0.52,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.72,
+      "y": -0.32,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffffff",
+      "x": -0.4,
+      "y": -0.32,
+      "size": 0.08
+     }
+    ]
+   }
+  },
+  {
+   "id": "tonga",
+   "name": "Tonga",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "canton-stripes",
+    "stripes": [
+     "#c10000"
+    ],
+    "count": 1,
+    "canton": "#ffffff",
+    "cantonW": 0.45,
+    "cantonH": 0.5,
+    "emblem": {
+     "kind": "cross",
+     "color": "#c10000",
+     "size": 0.3
+    }
+   }
+  },
+  {
+   "id": "tuvalu",
+   "name": "Tuvalu",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "union-canton",
+    "field": "#5b97b1",
+    "extra": [
+     {
+      "kind": "star",
+      "color": "#ffce00",
+      "x": 0.3,
+      "y": 0.3,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffce00",
+      "x": 0.6,
+      "y": 0.1,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffce00",
+      "x": 0.75,
+      "y": 0.5,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffce00",
+      "x": 0.45,
+      "y": 0.7,
+      "size": 0.08
+     },
+     {
+      "kind": "star",
+      "color": "#ffce00",
+      "x": 0.2,
+      "y": 0.75,
+      "size": 0.08
+     }
+    ]
+   }
+  },
+  {
+   "id": "vanuatu",
+   "name": "Vanuatu",
+   "continent": "Oceania",
+   "flag": {
+    "layout": "shapes",
+    "field": "#d21034",
+    "shapes": [
+     {
+      "rect": [
+       -1,
+       0,
+       2,
+       1
+      ],
+      "color": "#009543"
+     },
+     {
+      "line": [
+       -1,
+       -1,
+       -0.1,
+       0
+      ],
+      "width": 0.14,
+      "color": "#fdce12"
+     },
+     {
+      "line": [
+       -1,
+       1,
+       -0.1,
+       0
+      ],
+      "width": 0.14,
+      "color": "#fdce12"
+     },
+     {
+      "line": [
+       -0.1,
+       0,
+       1,
+       0
+      ],
+      "width": 0.14,
+      "color": "#fdce12"
+     },
+     {
+      "poly": [
+       [
+        -1,
+        -0.82
+       ],
+       [
+        -0.3,
+        0
+       ],
+       [
+        -1,
+        0.82
+       ]
+      ],
+      "color": "#000000"
+     }
+    ],
+    "extra": [
+     {
+      "kind": "ring",
+      "color": "#fdce12",
+      "x": -0.72,
+      "size": 0.15
+     }
+    ]
+   }
+  }
+ ]
+}

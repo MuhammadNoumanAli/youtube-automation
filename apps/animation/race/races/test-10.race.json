@@ -1,0 +1,10 @@
+{
+  "id": "test-10",
+  "title": "10 Countries Marble Race",
+  "countries": ["pakistan", "india", "china", "usa", "brazil", "germany", "japan", "turkey", "egypt", "uk"],
+  "stages": 3,
+  "templates": ["plinko", "zigzag", "funnels"],
+  "eliminate": "auto",
+  "seed": 42,
+  "fps": 30
+}
