@@ -1,0 +1,28 @@
+{
+  "id": "race-15-narrow",
+  "title": "15 Countries Narrow Marble Race",
+  "countries": [
+    "netherlands",
+    "germany",
+    "norway",
+    "japan",
+    "france",
+    "spain",
+    "italy",
+    "uk",
+    "brazil",
+    "india",
+    "australia",
+    "canada",
+    "mexico",
+    "south_korea",
+    "turkey"
+  ],
+  "eliminate": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+  "templates": ["mix"],
+  "seed": 27,
+  "fps": 30,
+  "courseWidth": 0.6,
+  "ballRadius": 24,
+  "maxStageSeconds": 50
+}

@@ -195,14 +195,15 @@ const StageInner: React.FC<{ meta: RaceMeta; data: StageData }> = ({ meta, data 
 // ------------------------------------------------------------------ course
 
 const Backdrop: React.FC<{ data: StageData }> = ({ data }) => {
-  const { x0, x1 } = COURSE;
+  const { x0, x1 } = data.course ?? COURSE;
   const y = data.finishY;
   const sq = 12;
   const n = Math.ceil((x1 - x0) / sq);
+  const cols = Math.ceil((x1 - x0) / 80);
   return (
     <g>
       {/* faint grid */}
-      {Array.from({ length: 19 }, (_, i) => (
+      {Array.from({ length: cols + 1 }, (_, i) => (
         <line key={`v${i}`} x1={x0 + i * 80} y1={0} x2={x0 + i * 80} y2={1080} stroke="#fff" strokeOpacity={0.04} />
       ))}
       {Array.from({ length: 14 }, (_, i) => (

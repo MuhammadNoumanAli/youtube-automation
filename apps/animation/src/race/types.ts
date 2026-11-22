@@ -50,6 +50,8 @@ export interface StageData {
   decisionFrame: number;
   ballR: number;
   finishY: number;
+  /** Narrow races: the course walls, otherwise the full COURSE. */
+  course?: { x0: number; x1: number };
   hopper: { x0: number; x1: number; y0: number; y1: number };
   elements: RaceElement[];
   /** Country id per ball index. */

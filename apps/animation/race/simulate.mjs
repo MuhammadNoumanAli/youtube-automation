@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { makeRng } from './rng.mjs';
 import { World, spinnerAngle, gateClosed, pendulumAngle, sliderOffset, beltDirection } from './physics.mjs';
 import { buildStage, defaultBallRadius, DEFAULT_TWISTS, LAYOUT, TEMPLATES, TEMPLATE_BANDS } from './stages.mjs';
+import { setBandBounds } from './bands.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const moduleRoot = path.resolve(here, '..');
@@ -109,6 +110,20 @@ function stageTemplates(race, rng) {
 
 const q2 = (v) => Math.round(v * 2); // half-pixel integers keep the replay small
 
+/** Full course walls at module load: courseWidth squeezes the course towards this centre and then restores it. */
+const FULL = { x0: LAYOUT.x0, x1: LAYOUT.x1 };
+
+/**
+ * Bounds of a course `width` (fraction of the normal course, 0.6..1) centred in the screen. A narrow course makes the
+ * field go almost single file. Builders read LAYOUT while they run, so the caller swaps LAYOUT.x0/x1 around buildStage.
+ */
+function courseBounds(width) {
+  const f = Math.max(0.5, Math.min(1, Number(width) || 1));
+  const cx = (FULL.x0 + FULL.x1) / 2;
+  const half = ((FULL.x1 - FULL.x0) * f) / 2;
+  return width === 1 ? { ...FULL } : { x0: Math.round(cx - half), x1: Math.round(cx + half) };
+}
+
 /**
  * Simulate one stage.
  * @param {object} p
@@ -130,10 +145,23 @@ export function simulateStage({
   prevRanking = null,
   avoidBands = [],
   takenNames = [],
+  courseWidth = 1,
 }) {
   if (eliminate < 1 || eliminate >= alive.length) throw new Error(`stage ${index}: cannot eliminate ${eliminate} of ${alive.length}`);
   const rng = makeRng(`${seed}:stage:${index}`);
-  const stage = buildStage({ template, rng, ballR, count: alive.length, twists, avoidBands, takenNames });
+  const course = courseBounds(courseWidth);
+  let stage;
+  // builders size themselves off LAYOUT, so narrow the course only while they run; physics keeps the replay's bounds
+  try {
+    LAYOUT.x0 = course.x0;
+    LAYOUT.x1 = course.x1;
+    setBandBounds(course.x0, course.x1);
+    stage = buildStage({ template, rng, ballR, count: alive.length, twists, avoidBands, takenNames });
+  } finally {
+    LAYOUT.x0 = FULL.x0;
+    LAYOUT.x1 = FULL.x1;
+    setBandBounds(FULL.x0, FULL.x1);
+  }
   const world = new World({ elements: stage.elements, fps });
   // spawn slot 0 is the bottom row of the hopper (released first). "comeback": last stage's slowest start in front.
   const shuffled = rng.shuffle(alive);
@@ -194,7 +222,7 @@ export function simulateStage({
 
     for (const b of balls) {
       // after the cut-off nobody else qualifies: late arrivals are not recorded as finishers
-      if (decisionFrame < 0 && b.finished < 0 && b.y > stage.finishY && b.x > LAYOUT.x0 && b.x < LAYOUT.x1) {
+      if (decisionFrame < 0 && b.finished < 0 && b.y > stage.finishY && b.x > course.x0 && b.x < course.x1) {
         b.finished = f;
         finishOrder.push(b.id);
         events.push({ frame: f, type: 'finish', id: b.id, place: finishOrder.length });
@@ -259,6 +287,7 @@ export function simulateStage({
       decisionFrame,
       ballR,
       finishY: stage.finishY,
+      course,
       hopper: stage.hopper,
       elements: stage.elements,
       balls: order,
@@ -312,6 +341,8 @@ export function loadRace(raceFile, overrides = {}) {
     if (!Number.isInteger(n) || n < 1 || n >= left) throw new Error(`stage ${i + 1}: cannot eliminate ${n} of ${left}`);
     left -= n;
   });
+  const courseWidth = race.courseWidth ?? 1;
+  if (!(courseWidth >= 0.5 && courseWidth <= 1)) throw new Error('race.courseWidth must be between 0.5 (narrowest) and 1 (full width)');
   return {
     id: race.id,
     title: race.title ?? `${countries.length} Countries Marble Race`,
@@ -328,6 +359,7 @@ export function loadRace(raceFile, overrides = {}) {
     maxStageSeconds: race.maxStageSeconds ?? 90,
     introSeconds: race.introSeconds ?? 6,
     podiumSeconds: race.podiumSeconds ?? 10,
+    courseWidth: race.courseWidth ?? 1,
     finalists: left,
   };
 }
@@ -357,6 +389,7 @@ export function simulateRace(race, onStage = () => {}) {
       prevRanking,
       avoidBands: lastBands,
       takenNames: usedNames,
+      courseWidth: race.courseWidth,
     });
     onStage(data, summary);
     summaries.push(summary);
@@ -427,8 +460,8 @@ async function main() {
   const { writeSfxKit } = await import('../voice/sfx.mjs');
   meta.sfx = writeSfxKit(outDir);
   fs.writeFileSync(path.join(outDir, 'race.json'), JSON.stringify(meta, null, 1));
-  const secs = meta.totalFrames / meta.fps;
-  console.log(`[race] winner: ${meta.winner}. Video length ${Math.floor(secs / 60)}m ${Math.round(secs % 60)}s (${meta.totalFrames} frames).`);
+  const totalSecs = Math.round(meta.totalFrames / meta.fps);
+  console.log(`[race] winner: ${meta.winner}. Video length ${Math.floor(totalSecs / 60)}m ${totalSecs % 60}s (${meta.totalFrames} frames).`);
   console.log(`[race] simulated in ${((Date.now() - t0) / 1000).toFixed(1)} s -> ${outDir}`);
 }
 

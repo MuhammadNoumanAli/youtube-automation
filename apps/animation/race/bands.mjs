@@ -10,7 +10,17 @@
  */
 import { LAYOUT } from './stages-layout.mjs';
 
-const { x0: X0, x1: X1 } = LAYOUT;
+// Bands size themselves off LAYOUT.x0/x1 at call time: narrow races move the walls and call setBandBounds.
+let X0 = LAYOUT.x0;
+let X1 = LAYOUT.x1;
+const full = { x0: X0, x1: X1 };
+/** Narrow races: the hurdle bands must stay inside the same walls as the frame and the hopper. */
+export function setBandBounds(x0, x1) {
+  X0 = x0;
+  X1 = x1;
+  full.x0 = x0;
+  full.x1 = x1;
+}
 const W = LAYOUT.wallR;
 const wall = (ax, ay, bx, by, r = W) => ({ type: 'wall', a: [ax, ay], b: [bx, by], r });
 
@@ -48,7 +58,6 @@ const trapCut = (u0, u1, rng) => {
   const period = rng.range(3.5, 5.5);
   return { u0, u1, make: (a, b) => ({ type: 'gate', a, b, r: W, role: 'trapdoor', closed: { period, open: rng.range(0.6, 0.9), phase: rng.range(0, period) } }) };
 };
-const full = { x0: X0, x1: X1 };
 const narrow = (e) => e.x1 - e.x0 < 500;
 
 // ------------------------------------------------------------------ band builders
@@ -113,8 +122,10 @@ function spinnerRow(rng, { r, y0 }) {
 
 /** Seesaws: tilt under the balls that land on them (the first one decides which way), then spring back. */
 function seesaws(rng, { r, y0 }) {
-  const n = rng.int(3, 5);
   const gapX = Math.max(5.5 * r, 80);
+  // narrow races: a seesaw is never shorter than 90 px, so drop one instead of spilling past the walls
+  let n = rng.int(3, 5);
+  while (n > 2 && n * 180 + (n - 1) * gapX > X1 - X0 - 8) n--;
   const L = Math.min(200, Math.max(90, (X1 - X0 - (n + 1) * gapX) / (2 * n)));
   const span = n * 2 * L + (n - 1) * gapX;
   const left = X0 + (X1 - X0 - span) / 2;

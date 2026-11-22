@@ -84,6 +84,7 @@ finish pops, winner ding, elimination sound, podium sparkle (all original, from 
 | `twists` | `{ "pads": true, "bumpers": true, "shortcuts": true }`; set any to false |
 | `startOrder` | `"comeback"` (default: last stage's slowest start at the front of the hopper) or `"random"` |
 | `seed` | any number or text; change it for a different race with the same settings |
+| `courseWidth` | `1` (default, full width) down to `0.5`: squeezes the walls toward the centre and rebuilds every hurdle inside them, so a small field races almost single file |
 | `fps`, `ballRadius`, `maxStageSeconds`, `introSeconds`, `podiumSeconds` | optional |
 
 Stage types, all randomised from the seed:
