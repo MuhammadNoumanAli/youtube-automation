@@ -224,6 +224,9 @@ export function simulateStage({
     for (const b of balls) {
       // after the cut-off nobody else qualifies: late arrivals are not recorded as finishers
       if (decisionFrame < 0 && b.finished < 0 && b.y > stage.finishY && b.x > course.x0 && b.x < course.x1) {
+        // a ball crossing on the same frame as the last qualifying place keeps its distance in `rest`,
+        // but is not billed as a finisher (and cannot make the finish list one longer than the cut)
+        if (finishOrder.length >= qualifyCount) continue;
         b.finished = f;
         finishOrder.push(b.id);
         events.push({ frame: f, type: 'finish', id: b.id, place: finishOrder.length });

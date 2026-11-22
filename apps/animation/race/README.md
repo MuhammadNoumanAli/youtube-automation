@@ -48,7 +48,7 @@ Without PowerShell:
 node race/simulate.mjs --race race/races/test-10.race.json --out D:\YouTubeStudio\races\test-10 [--seed 7]
 node scripts/render-race.mjs --race-dir D:\YouTubeStudio\races\test-10 --out D:\YouTubeStudio\races\test-10.mp4 --concurrency 4
 npx remotion studio src/race/index.ts --public-dir D:\YouTubeStudio\races\test-10\replay   # "RaceFull", "RaceFlags"
-node --test race/test/                                                                         # 15 tests, under a minute
+node --test race/test/                                                                         # 17 tests, under a minute
 ```
 
 ## How it works
@@ -91,14 +91,22 @@ finish pops, winner ding, elimination sound, podium sparkle (all original, from 
 Stage types, all randomised from the seed:
 
 - **`mix` – mixed hurdles (a new course every stage)**: 3–5 rows of obstacles stacked between the hopper and the
-  finish, picked from 12 hurdles (`race/bands.mjs`). A hurdle never appears twice in one stage, and the next stage
+  finish, picked from 14 hurdles (`race/bands.mjs`). A hurdle never appears twice in one stage, and the next stage
   skips every hurdle the previous stage used, so the course in front of the viewers is always new. With all types
   allowed, about 85% of stages are mixed.
-  - **Seesaws** (green): tilt under the balls that land on them (the first one decides which way), then spring back
+  - **Seesaws** (green): a hinged flap on each side wall, with its free end over the drop lane of the hurdle above,
+    and a centre seesaw below. A landing ball dives inwards on the flap and the centre bar tips whoever comes down
+    the middle towards a side, so no lane slips past untouched
   - **Windmills** (blue hub): free paddle wheels spun by the falling balls, which then fling the next balls
   - **Hammers**: two or three swinging pendulums over a ramp; they whack every ball that bounces into them
   - **Conveyor belts**: carry balls to one end and reverse direction every few seconds
-  - **Sliders** (purple): slotted floor sliding under the balls; they drop when a slot passes beneath
+  - **Sliders** (purple): slotted floor where every panel is on its own clock — some slide left while the next
+    slides right, fast or slow — so the slots open unpredictably; balls drop when one passes beneath them
+  - **Springboards** (orange): a row of steep jump ramps tilted one way; a ball landing on any of them is flung up
+    and along the row, back into the crowd, while a ball that misses drops through the gaps between them. Usually
+    placed straight under the sliders, so a ball that falls through a slot bounces back up into them
+  - **Pinch gate**: two long ramps steer a ball from whichever side it enters towards a one-ball neck; a splitter
+    peg under the neck throws the ball that wins the slot to a side while the queue fights for the gap
   - **Double floor**: two sliders stacked, the second moving against the first
   - **Trapdoor floor**: a row of timed hatches that opens in a wave and rains the whole field down
   - **Bumper field**: staggered pinball bumpers that throw balls back up the course

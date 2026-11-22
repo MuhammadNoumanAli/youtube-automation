@@ -3,7 +3,8 @@
  * picked at random from the seed, so every stage is a new course. Each band spans the course width, takes the balls
  * falling in from above (`entry`: the x range they arrive in) and lets them out at the bottom (`exit`).
  *
- * Bands: pegs, bumpers, spinners, seesaws, wheels, funnel, ramp, hammers, conveyor, sliders, wipeout, trapdoors.
+ * Bands: pegs, bumpers, spinners, seesaws, wheels, funnel, ramp, hammers, conveyor, sliders, wipeout, trapdoors,
+ * pinch, bounce.
  * A stage never repeats a band and never reuses a band from the stage before it, so the next hurdle is always new.
  * Every size and gap is derived from the ball radius r, so nothing is narrower than a ball (no wedging), and moving
  * parts never come closer to a wall or another part than a ball's width (no crushing).
@@ -37,6 +38,8 @@ export const BAND_NAMES = {
   sliders: 'Sliders',
   wipeout: 'Wipeout',
   trapdoors: 'Trapdoors',
+  pinch: 'Pinch Gate',
+  bounce: 'Springboards',
 };
 export const BANDS = Object.keys(BAND_NAMES);
 
@@ -120,24 +123,55 @@ function spinnerRow(rng, { r, y0 }) {
   return { elements: els, h: 2 * L + 16, exit: full };
 }
 
-/** Seesaws: tilt under the balls that land on them (the first one decides which way), then spring back. */
+/**
+ * Seesaw cascade: one hinged flap on each side wall (the free end over the drop lanes of the band above) and a
+ * centre seesaw below them. A ball landing on a flap tips it and rolls inwards; the centre seesaw catches whoever
+ * comes down the middle and tips them off to a side. Unlike a row of free seesaws there is no lane a ball can slide
+ * past without touching one.
+ */
 function seesaws(rng, { r, y0 }) {
-  const gapX = Math.max(5.5 * r, 80);
-  // narrow races: a seesaw is never shorter than 90 px, so drop one instead of spilling past the walls
-  let n = rng.int(3, 5);
-  while (n > 2 && n * 180 + (n - 1) * gapX > X1 - X0 - 8) n--;
-  const L = Math.min(200, Math.max(90, (X1 - X0 - (n + 1) * gapX) / (2 * n)));
-  const span = n * 2 * L + (n - 1) * gapX;
-  const left = X0 + (X1 - X0 - span) / 2;
-  const maxAngle = 0.55;
-  const cy = y0 + Math.sin(maxAngle) * L + 12;
-  const k = L / 140;
-  const els = [];
-  for (let i = 0; i < n; i++) {
-    const rest = (rng() < 0.5 ? -1 : 1) * rng.range(0.06, 0.16); // never perfectly level: nothing balances on it
-    els.push({ type: 'rotor', style: 'seesaw', c: [left + L + i * (2 * L + gapX), cy], len: L, r: 6, arms: 1, inertia: 14000 * k * k, damping: 40000 * k ** 1.5, spring: 300000 * k, rest, maxAngle });
-  }
-  return { elements: els, h: 2 * Math.sin(maxAngle) * L + 30, exit: full };
+  const span = X1 - X0;
+  const reach = Math.max(150, Math.min(300, span * 0.26)); // flap length inwards from each wall
+  const flapMax = 0.24;
+  const drop = Math.sin(flapMax) * reach;
+  const topY = y0 + 26;
+  const midY = topY + drop + 2 * r + 24;
+  // free ends of the flaps stay outside the centre seesaw, so a ball dropping off a flap has a one-ball channel
+  const lenC = Math.min(340, Math.max(110, span / 2 - reach - (2 * r + 50)));
+  const kF = reach / 140;
+  const kC = lenC / 140;
+  const flap = (cx, side, rest) => ({
+    type: 'rotor',
+    style: 'flap',
+    side,
+    c: [cx, topY],
+    len: reach,
+    r: 6,
+    arms: 1,
+    inertia: 8000 * kF * kF,
+    damping: 26000 * kF ** 1.5,
+    spring: 190000 * kF,
+    rest,
+    maxAngle: flapMax,
+  });
+  const els = [
+    flap(X0, 1, rng.range(0.08, 0.14)), // left flap: dives towards the middle
+    flap(X1, -1, -rng.range(0.08, 0.14)), // right flap: dives towards the middle
+    {
+      type: 'rotor',
+      style: 'seesaw',
+      c: [(X0 + X1) / 2, midY],
+      len: lenC,
+      r: 6,
+      arms: 1,
+      inertia: 14000 * kC * kC,
+      damping: 40000 * kC ** 1.5,
+      spring: 300000 * kC,
+      rest: (rng() < 0.5 ? -1 : 1) * rng.range(0.05, 0.1),
+      maxAngle: 0.24,
+    },
+  ];
+  return { elements: els, h: midY - y0 + Math.sin(0.24) * lenC + 20, exit: full };
 }
 
 /** Free paddle wheels: falling balls spin them, and the spinning wheels fling the next balls. */
@@ -253,10 +287,12 @@ function sliderRow(rng, r, y, tight) {
   const n = Math.max(2, Math.floor((usable + slot) / (bar + slot)));
   const total = n * bar + (n - 1) * slot;
   const start = X0 + side + (usable - total) / 2;
-  const period = rng.range(2.2, 3.2);
-  const phase = rng.range(0, Math.PI * 2);
   const els = [];
   for (let i = 0; i < n; i++) {
+    // each panel travels on its own clock: some are going left while their neighbour goes right, fast or slow,
+    // so the slots open and close unpredictably instead of the whole row sweeping side to side together
+    const period = rng.range(2.0, 4.2);
+    const phase = rng.range(0, Math.PI * 2);
     const x = start + i * (bar + slot);
     els.push({ type: 'slider', a: [x, y], b: [x + bar, y], r: W + 1, axis: [1, 0], amp, period, phase });
   }
@@ -272,6 +308,51 @@ function wipeout(rng, { r, y0, tight }) {
   const gapY = 2 * r + 26; // already the minimum that lets a ball roll between the bar capsules
   const els = [...sliderRow(rng, r, y0 + 10, tight), ...sliderRow(rng, r, y0 + 10 + gapY, tight)];
   return { elements: els, h: gapY + 24, exit: full };
+}
+
+/**
+ * Mirror gate: two long ramps steer a ball from whichever side it enters towards a one-ball neck in the middle.
+ * A splitter peg under the neck throws each ball that wins the slot to the left or right, while the queue above
+ * fights for the gap.
+ */
+function pinch(rng, { r, y0, tight }) {
+  const neck = tight ? Math.max(2.3 * r + 10, 40) : Math.max(3.4 * r + 16, 58);
+  const margin = Math.max(220, 6 * r + 90);
+  const nx = rng.range(X0 + margin, X1 - margin);
+  const h = rng.range(125, 150);
+  const splitY = h + Math.max(52, 2.4 * r + 16);
+  const els = [
+    wall(X0, y0, nx - neck / 2, y0 + h),
+    wall(X1, y0, nx + neck / 2, y0 + h),
+    // the ball that gets through the neck is thrown aside instead of straight on
+    { type: 'peg', c: [nx + rng.range(-0.5, 0.5) * r, y0 + splitY], r: Math.max(9, 0.6 * r) },
+  ];
+  return { elements: els, h: splitY + 26, exit: full };
+}
+
+/**
+ * Springboards: a row of steep jump ramps tilted one way. A ball landing anywhere on a ramp is flung up and along
+ * the row, back into the crowd above; a ball that misses drops through the gaps between ramps. Every ramp tip is
+ * open air, so nothing can settle on them, and the gaps stay wider than a ball, so nobody wedges between two.
+ */
+function bounce(rng, { r, y0 }) {
+  const span = X1 - X0;
+  const dir = rng() < 0.5 ? 1 : -1;
+  const margin = Math.max(2.6 * r + 30, span * 0.05);
+  const gap = Math.max(3.2 * r, span * 0.07);
+  const n = span > 1000 ? 4 : span > 700 ? 3 : 2;
+  const w = (span - 2 * margin - (n - 1) * gap) / n;
+  const deg = rng.range(28, 34);
+  const rise = Math.tan((deg * Math.PI) / 180) * w;
+  const kick = rng.range(520, 620);
+  const els = [];
+  for (let i = 0; i < n; i++) {
+    const sx = X0 + margin + i * (w + gap);
+    // the low end points the way the ball is thrown; every ramp in the row throws the same way
+    if (dir === 1) els.push({ type: 'pad', a: [sx, y0], b: [sx + w, y0 + rise], r: W, kick, cooldown: 1.0 });
+    else els.push({ type: 'pad', a: [sx + w, y0], b: [sx, y0 + rise], r: W, kick, cooldown: 1.0 });
+  }
+  return { elements: els, h: rise + Math.max(40, 1.5 * r + 20), exit: full };
 }
 
 /** A floor of timed trapdoors: balls wait on closed gates, then rain through as the gates open in a wave. */
@@ -296,7 +377,22 @@ function trapdoors(rng, { r, y0 }) {
   return { elements: els, h: 24, exit: full };
 }
 
-const BUILD = { pegs, bumpers, spinners: spinnerRow, seesaws, wheels, funnel, ramp, hammers, conveyor, sliders, wipeout, trapdoors };
+const BUILD = {
+  pegs,
+  bumpers,
+  spinners: spinnerRow,
+  seesaws,
+  wheels,
+  funnel,
+  ramp,
+  hammers,
+  conveyor,
+  sliders,
+  wipeout,
+  trapdoors,
+  pinch,
+  bounce,
+};
 
 const SUFFIXES = ['Gauntlet', 'Mayhem', 'Run', 'Chaos', 'Express', 'Alley', 'Showdown', 'Circuit', 'Blitz', 'Frenzy', 'Squeeze', 'Sprint'];
 
@@ -308,7 +404,9 @@ const SUFFIXES = ['Gauntlet', 'Mayhem', 'Run', 'Chaos', 'Express', 'Alley', 'Sho
  */
 export function composeMix(rng, { r, count, twists, entry, yStart = 250, yEnd = 930, avoid = [], takenNames = [], tight = false }) {
   // the bumper field and the trapdoor floor are the twist bands: switching a twist off removes its hurdle
-  const allowedBands = BANDS.filter((b) => (b !== 'bumpers' || twists.bumpers) && (b !== 'trapdoors' || twists.shortcuts));
+  const allowedBands = BANDS.filter(
+    (b) => (b !== 'bumpers' || twists.bumpers) && (b !== 'trapdoors' || twists.shortcuts) && (b !== 'bounce' || twists.pads),
+  );
   // free space between rows: one ball high in tight races, so a crowd has to trickle through
   const gapY = tight ? Math.max(2.3 * r + 12, 30) : Math.max(2.6 * r + 10, 36);
   const els = [];
@@ -319,7 +417,8 @@ export function composeMix(rng, { r, count, twists, entry, yStart = 250, yEnd = 
   for (let tries = 0; used.length < want && tries < 80; tries++) {
     const fresh = allowedBands.filter((b) => !used.includes(b) && !avoid.includes(b));
     const pool = fresh.length ? fresh : allowedBands.filter((b) => !used.includes(b));
-    const kind = rng.pick(pool);
+    // after sliders, springboards usually go underneath: balls drop through a slot and bounce straight back up
+    const kind = used[used.length - 1] === 'sliders' && fresh.includes('bounce') && rng() < 0.75 ? 'bounce' : rng.pick(pool);
     const res = BUILD[kind](rng, { r, count, twists, y0: y, entry: e, tight });
     if (y + res.h > yEnd) continue; // too tall for the room left: try another band
     els.push(...res.elements);

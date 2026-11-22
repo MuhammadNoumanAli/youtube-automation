@@ -236,6 +236,60 @@ test('one-ball races finish too, and the tight final carries hammers over its la
   assert.ok(mix.data.bands.length >= 2, mix.data.bands.join('>'));
 });
 
+/** Smallest gap between any ball's surface and rotor bar `i` on a replay. */
+function closestToRotor(data, i) {
+  const el = data.elements[i];
+  let best = Infinity;
+  for (let f = 0; f < data.frames; f++) {
+    const th = (data.kin[i][f] / 10) * (Math.PI / 180);
+    const dir = el.style === 'flap' ? el.side ?? 1 : null;
+    const ax = dir === -1 ? el.c[0] : el.c[0] - Math.cos(th) * el.len;
+    const ay = dir === -1 ? el.c[1] : el.c[1] - Math.sin(th) * el.len;
+    const bx = el.c[0] + (dir ?? 1) * Math.cos(th) * el.len;
+    const by = el.c[1] + (dir ?? 1) * Math.sin(th) * el.len;
+    const ex = bx - ax;
+    const ey = by - ay;
+    for (const t of data.tracks) {
+      const x = t[f * 3] / 2;
+      const y = t[f * 3 + 1] / 2;
+      let u = ((x - ax) * ex + (y - ay) * ey) / (ex * ex + ey * ey || 1);
+      u = Math.max(0, Math.min(1, u));
+      best = Math.min(best, Math.hypot(x - (ax + ex * u), y - (ay + ey * u)) - el.r);
+    }
+  }
+  return best;
+}
+
+test('new hurdles are used: independent sliders, a seesaw cascade, springboards and a pinch gate', () => {
+  const alive = Array.from({ length: 10 }, (_, i) => `c${i}`);
+  const run = (seed) => simulateStage({ index: 1, template: 'mix', alive, eliminate: 1, seed, fps: 30, ballR: 22, tight: true });
+
+  // sliders: panels on their own clocks, with springboards below them
+  const sl = run(1);
+  assert.ok(sl.summary.bands.includes('sliders'), sl.summary.bands.join('>'));
+  const sliders = sl.data.elements.filter((e) => e.type === 'slider');
+  assert.ok(sliders.length >= 2, `only ${sliders.length} slider panels`);
+  assert.ok(new Set(sliders.map((e) => e.period)).size > 1, 'every slider shares one clock');
+  assert.ok(new Set(sliders.map((e) => e.phase)).size > 1, 'every slider starts in the same place');
+  const pads = sl.data.elements.filter((e) => e.type === 'pad');
+  assert.ok(pads.length >= 4, `only ${pads.length} springboard ramps`);
+  for (const p of pads) assert.ok(p.a[1] > sliders[0].a[1] && p.b[1] > sliders[0].a[1], 'springboards are not below the sliders');
+  assert.ok(sl.summary.boosts >= 3, `the springboards lifted only ${sl.summary.boosts} balls`);
+
+  // seesaw cascade: two wall flaps and a centre seesaw, and each one is actually hit
+  const see = run(4);
+  assert.ok(see.summary.bands.includes('seesaws'), see.summary.bands.join('>'));
+  const rot = see.data.elements.map((el, i) => ({ el, i })).filter(({ el }) => el.type === 'rotor');
+  assert.equal(rot.filter(({ el }) => el.style === 'flap').length, 2);
+  assert.equal(rot.filter(({ el }) => el.style === 'seesaw').length, 1);
+  for (const { el, i } of rot) assert.ok(closestToRotor(see.data, i) <= see.data.ballR + 1, `the ${el.style} is never touched`);
+
+  // pinch gate: the field still gets through
+  const pin = run(21);
+  assert.ok(pin.summary.bands.includes('pinch'), pin.summary.bands.join('>'));
+  assert.equal(pin.summary.timedOut, false);
+});
+
 test('a whole race never reuses the previous stage hurdles and never repeats a stage name', () => {
   const race = loadRace(tmpRace({ id: 'variety', countries: ids.slice(0, 12), stages: 10, templates: ['mix'], seed: 21 }));
   const names = [];
