@@ -148,22 +148,27 @@ function zigzag(rng, r, count, twists, withGates = false, tight = false) {
       cuts.push(trapdoorCut(uc - w / 2, uc + w / 2, { period, open: rng.range(0.6, 0.9), phase: rng.range(0, period) }));
     }
     elements.push(...rampPieces(sx, y, ex, y + drop, cuts));
-    // a hammer swings over the landing zone of every ramp that receives the drop above: a ball that lands or
-    // bounces into its arc is knocked back up the slope, while a ball already rolling passes underneath it
-    // (clearance 2r+6). It hangs below the ramp above, so it never plugs the one-ball chute itself.
+    // a hammer swings over the landing zone of every ramp that receives the drop above. With only a few balls
+    // left there is no queue to throttle, so the bob hangs low enough (4 px past the top of a rolling ball) that
+    // it really knocks a ball back up the ramp; the swing is wide and the arm long, so the bob rises and steps
+    // aside at each extreme and a ball always has a window to slip through. In a crowded field the lane has to
+    // stay open, so the bob sits one ball width up and only taps balls that hop under it.
     if (tight && i > 0) {
+      const few = count <= 4;
       const u = rng.range(0.05, 0.22);
       const surf = y + drop * u;
-      const bobR = Math.max(12, 0.85 * r);
-      const clearance = 2 * r + 6;
-      const arm = Math.max(28, Math.min(40, 0.3 * r + 24));
+      // a small bob on a long arm: it dips 4 px into the top of a rolling ball at the bottom of the swing, and
+      // at each extreme it lifts clear and steps ~35 px aside, so a ball always has a window to get past
+      const bobR = few ? Math.max(12, 0.55 * r) : Math.max(12, 0.85 * r);
+      const clearance = few ? 2 * r - 4 : 2 * r + 1;
+      const arm = few ? 38 + Math.max(0, r - 20) * 0.5 : Math.max(28, Math.min(40, 0.3 * r + 24));
       elements.push({
         type: 'pendulum',
         pivot: [sx + (ex - sx) * u, surf - clearance - bobR - arm],
         len: arm,
         rod: 4,
         bobR,
-        amp: rng.range(0.75, 1.0),
+        amp: few ? rng.range(1.0, 1.15) : rng.range(0.75, 1.0),
         period: rng.range(1.2, 1.8),
         phase: rng.range(0, Math.PI * 2),
       });

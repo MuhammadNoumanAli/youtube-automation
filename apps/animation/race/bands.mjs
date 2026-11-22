@@ -244,9 +244,9 @@ function hammers(rng, ctx) {
   const { r, y0 } = ctx;
   const len = rng.range(90, 115);
   const bobR = Math.max(16, 1.2 * r);
-  // lowest point of the hammer just over a rolling ball: it can never block the ramp (a ball stuck in a rhythm of
-  // being knocked back), but it whacks every ball that bounces or flies into its swing
-  const clearance = 2 * r + 6;
+  // the bob's lowest point sits a few px inside the top of a rolling ball, so the hammers really do hit the field;
+  // the arc still lifts it clear between passes, and the bob never touches the ramp itself
+  const clearance = 2 * r - 4;
   const top = y0;
   const g = rampGeom(rng, { ...ctx, y0: top + len + bobR + clearance + W });
   const n = rng.int(2, 3);
@@ -276,24 +276,32 @@ function conveyor(rng, { r, y0 }) {
   return { elements: [{ type: 'belt', a, b, r: W + 1, speed, flip }], h: 24, exit: full };
 }
 
-/** One row of slotted bars sliding sideways; balls drop through when a slot passes beneath them. */
+/**
+ * One row of slotted bars sliding sideways; balls drop through when a slot passes beneath them. The row is sized
+ * from the course so that, at full deflection, the outermost panels reach within a ball's width of each wall: no
+ * lane beside the row goes uncovered, so a ball cannot slip past the whole floor down an empty side channel.
+ */
 function sliderRow(rng, r, y, tight) {
   // the slot is the hole between two bars (each bar capsule is radius W+1): one ball wide in tight races
   const slot = tight ? 2 * r + 26 : 2.2 * 2 * r + 10;
-  const bar = rng.range(170, 240);
-  const amp = (bar + slot) / 2;
-  const side = amp + 2 * r + 15;
-  const usable = X1 - X0 - 2 * side;
-  const n = Math.max(2, Math.floor((usable + slot) / (bar + slot)));
-  const total = n * bar + (n - 1) * slot;
-  const start = X0 + side + (usable - total) / 2;
+  // a moving panel never comes closer to a wall than this, so it can never crush a ball against it
+  const edge = 2 * r + 15;
+  const room = X1 - X0 - 2 * edge;
+  // panels and their slots tile the course: each panel slides half a pitch, so two neighbours can close the slot
+  // between them but never cross, and the outer panels slide right up to the walls at full deflection
+  const want = rng.range(170, 240);
+  const n = Math.max(2, Math.min(5, Math.round(room / (want + slot)) - 1));
+  const pitch = room / n;
+  const bar = 0.6 * pitch;
+  const amp = (pitch - bar) / 2;
+  const start = X0 + edge + amp;
   const els = [];
   for (let i = 0; i < n; i++) {
     // each panel travels on its own clock: some are going left while their neighbour goes right, fast or slow,
     // so the slots open and close unpredictably instead of the whole row sweeping side to side together
     const period = rng.range(2.0, 4.2);
     const phase = rng.range(0, Math.PI * 2);
-    const x = start + i * (bar + slot);
+    const x = start + i * pitch;
     els.push({ type: 'slider', a: [x, y], b: [x + bar, y], r: W + 1, axis: [1, 0], amp, period, phase });
   }
   return els;

@@ -85,7 +85,7 @@ finish pops, winner ding, elimination sound, podium sparkle (all original, from 
 | `startOrder` | `"comeback"` (default: last stage's slowest start at the front of the hopper) or `"random"` |
 | `seed` | any number or text; change it for a different race with the same settings |
 | `courseWidth` | `1` (default, full width) down to `0.5`: squeezes the walls toward the centre and rebuilds every hurdle inside them, so a small field races almost single file |
-| `flow` | `"wide"` (default) or `"single"`: one-ball passages. Drop chutes, funnel necks, slider slots and the space between mixed hurdles shrink to about a ball and a half, and the final's ramps get swinging hammers over their landing zones. Intended for 24 or fewer countries; a big field would jam behind every chute |
+| `flow` | `"wide"` (default) or `"single"`: one-ball passages. Drop chutes, funnel necks, slider slots and the space between mixed hurdles shrink to about a ball and a half, and the final's ramps get swinging hammers over their landing zones. In the last stage, where only a couple of balls are left and there is no queue to throttle, the bob hangs low enough to strike a ball rolling underneath it. Intended for 24 or fewer countries; a big field would jam behind every chute |
 | `fps`, `ballRadius`, `maxStageSeconds`, `introSeconds`, `podiumSeconds` | optional |
 
 Stage types, all randomised from the seed:
@@ -100,8 +100,9 @@ Stage types, all randomised from the seed:
   - **Windmills** (blue hub): free paddle wheels spun by the falling balls, which then fling the next balls
   - **Hammers**: two or three swinging pendulums over a ramp; they whack every ball that bounces into them
   - **Conveyor belts**: carry balls to one end and reverse direction every few seconds
-  - **Sliders** (purple): slotted floor where every panel is on its own clock — some slide left while the next
-    slides right, fast or slow — so the slots open unpredictably; balls drop when one passes beneath them
+  - **Sliders** (purple): panels and slots tile the whole course, so the outer panels slide right up to the walls;
+    every panel is on its own clock — some slide left while the next slides right, fast or slow — so the slots
+    open and close unpredictably and neighbours can close up without ever crossing; balls drop through the slots
   - **Springboards** (orange): a row of steep jump ramps tilted one way; a ball landing on any of them is flung up
     and along the row, back into the crowd, while a ball that misses drops through the gaps between them. Usually
     placed straight under the sliders, so a ball that falls through a slot bounces back up into them

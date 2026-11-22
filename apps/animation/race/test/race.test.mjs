@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { autoEliminations, countryCatalog, knownCharacterIds, loadRace, planEliminations, simulateRace, simulateStage } from '../simulate.mjs';
 import { buildStage, defaultBallRadius, LAYOUT, TEMPLATES } from '../stages.mjs';
-import { gateClosed, World } from '../physics.mjs';
+import { gateClosed, pendulumAngle, World } from '../physics.mjs';
 import { makeRng } from '../rng.mjs';
 
 const hash = (o) => crypto.createHash('sha256').update(JSON.stringify(o)).digest('hex');
@@ -231,9 +231,26 @@ test('one-ball races finish too, and the tight final carries hammers over its la
     assert.ok(h.pivot[1] > LAYOUT.hopperBottom, JSON.stringify(h));
     assert.ok(h.pivot[1] + h.len + h.bobR < LAYOUT.finishY, JSON.stringify(h));
   }
+  // the bobs clip a hopping ball, so a ball rolling down a landing ramp really does get struck
+  const hits = hammerContactFrames(data);
+  assert.ok(hits >= 10, `the final hammers touch a ball in only ${hits} frames`);
   const mix = simulateStage({ index: 1, template: 'mix', alive, eliminate: 2, seed: 7, fps: 30, ballR: 24, tight: true });
   assert.equal(mix.summary.timedOut, false);
   assert.ok(mix.data.bands.length >= 2, mix.data.bands.join('>'));
+});
+
+test('a two-ball final: the low hammer really strikes a rolling ball and still lets the field finish', () => {
+  let struck = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const { data, summary } = simulateStage({ index: 9, template: 'zigzag', alive: ['a', 'b'], eliminate: 1, seed, fps: 30, ballR: 22, tight: true, maxSeconds: 60 });
+    assert.equal(summary.timedOut, false, `seed ${seed} timed out`);
+    const hits = hammerContactFrames(data);
+    assert.ok(hits > 0, `seed ${seed}: the final hammers never touch a ball`);
+    if (hits >= 4) struck++;
+    // the low hammer uses a small bob on a long arm, so it dips into the ball and clears it at each extreme
+    for (const h of data.elements.filter((e) => e.type === 'pendulum')) assert.ok(h.bobR < data.ballR, 'the low hammer has an oversized bob');
+  }
+  assert.ok(struck >= 10, `only ${struck} of 12 finals show a real strike`);
 });
 
 /** Smallest gap between any ball's surface and rotor bar `i` on a replay. */
@@ -260,6 +277,25 @@ function closestToRotor(data, i) {
   return best;
 }
 
+/** Frames in which any ball touches any hammer bob of the stage. */
+function hammerContactFrames(data) {
+  const pends = data.elements.filter((e) => e.type === 'pendulum');
+  let frames = 0;
+  for (let f = 0; f < data.frames; f++) {
+    const t = f / data.fps;
+    const bobs = pends.map((e) => {
+      const a = pendulumAngle(e, t);
+      return [e.pivot[0] + Math.sin(a) * e.len, e.pivot[1] + Math.cos(a) * e.len, e.bobR];
+    });
+    for (const tr of data.tracks) {
+      const x = tr[f * 3] / 2;
+      const y = tr[f * 3 + 1] / 2;
+      if (bobs.some(([bx, by, br]) => Math.hypot(x - bx, y - by) < data.ballR + br + 0.5)) frames++;
+    }
+  }
+  return frames;
+}
+
 test('new hurdles are used: independent sliders, a seesaw cascade, springboards and a pinch gate', () => {
   const alive = Array.from({ length: 10 }, (_, i) => `c${i}`);
   const run = (seed) => simulateStage({ index: 1, template: 'mix', alive, eliminate: 1, seed, fps: 30, ballR: 22, tight: true });
@@ -275,6 +311,12 @@ test('new hurdles are used: independent sliders, a seesaw cascade, springboards 
   assert.ok(pads.length >= 4, `only ${pads.length} springboard ramps`);
   for (const p of pads) assert.ok(p.a[1] > sliders[0].a[1] && p.b[1] > sliders[0].a[1], 'springboards are not below the sliders');
   assert.ok(sl.summary.boosts >= 3, `the springboards lifted only ${sl.summary.boosts} balls`);
+  // at full deflection the row reaches within a ball's width of each wall, so no side lane goes uncovered
+  const reach = 2 * sl.data.ballR + 16;
+  const left = Math.min(...sliders.map((e) => e.a[0] - e.amp));
+  const right = Math.max(...sliders.map((e) => e.b[0] + e.amp));
+  assert.ok(left <= LAYOUT.x0 + reach, `the sliders stop ${(left - LAYOUT.x0).toFixed(0)} px from the left wall`);
+  assert.ok(right >= LAYOUT.x1 - reach, `the sliders stop ${(LAYOUT.x1 - right).toFixed(0)} px from the right wall`);
 
   // seesaw cascade: two wall flaps and a centre seesaw, and each one is actually hit
   const see = run(4);
@@ -284,10 +326,12 @@ test('new hurdles are used: independent sliders, a seesaw cascade, springboards 
   assert.equal(rot.filter(({ el }) => el.style === 'seesaw').length, 1);
   for (const { el, i } of rot) assert.ok(closestToRotor(see.data, i) <= see.data.ballR + 1, `the ${el.style} is never touched`);
 
-  // pinch gate: the field still gets through
+  // pinch gate: the field still gets through, and the hammers above it catch a ball now and then
   const pin = run(21);
   assert.ok(pin.summary.bands.includes('pinch'), pin.summary.bands.join('>'));
   assert.equal(pin.summary.timedOut, false);
+  const pinHits = hammerContactFrames(pin.data);
+  assert.ok(pinHits > 10, `the hammers above the pinch gate touch a ball in only ${pinHits} frames`);
 });
 
 test('a whole race never reuses the previous stage hurdles and never repeats a stage name', () => {
