@@ -1,0 +1,23 @@
+{
+  "id": "race-10-tight",
+  "title": "10 Countries One-Ball Marble Race",
+  "countries": [
+    "netherlands",
+    "germany",
+    "norway",
+    "japan",
+    "france",
+    "spain",
+    "italy",
+    "uk",
+    "brazil",
+    "india"
+  ],
+  "eliminate": [1, 1, 1, 1, 1, 1, 1, 1, 1],
+  "templates": ["mix"],
+  "seed": 8,
+  "fps": 30,
+  "flow": "single",
+  "ballRadius": 22,
+  "maxStageSeconds": 60
+}
