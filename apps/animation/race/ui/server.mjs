@@ -286,6 +286,8 @@ const server = http.createServer(async (req, res) => {
         templates: Array.isArray(b.templates) && b.templates.length ? b.templates.filter((t) => TEMPLATES.includes(t)) : undefined,
         twists: { pads: b.twists?.pads !== false, bumpers: b.twists?.bumpers !== false, shortcuts: b.twists?.shortcuts !== false },
         startOrder: b.comeback === false ? 'random' : 'comeback',
+        // one-ball passages only make sense for a small field; a big crowd would jam behind every chute
+        flow: b.flow === 'single' && picked.length <= 24 ? 'single' : undefined,
         seed: b.seed === '' || b.seed === undefined ? Math.floor(Math.random() * 1e6) : Number.isNaN(Number(b.seed)) ? String(b.seed) : Number(b.seed),
         fps: 30,
       };

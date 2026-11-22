@@ -94,6 +94,10 @@
         skips every hurdle the last one used, and no stage name repeats in a race, so viewers always see a new course.
         Add a classic type only if you want the odd single-theme stage (ramps, pegs, funnels, gates or spinners).
       </div>
+      <div class="hint" style="margin:8px 0 4px">Course flow <span style="opacity:.75">(one-ball passages turn the drops and necks into single-file queues; best for 24 or fewer countries)</span></div>
+      <div class="checks">
+        <label><input type="checkbox" id="flow-single" checked /> One-ball passages <span class="hint" style="display:inline">(narrow chutes, tight necks, hammers over the final's ramps)</span></label>
+      </div>
       <hr class="sep" />
       <div class="hint" style="margin-bottom:4px">Twists (comebacks are possible, the race stays fair: everything comes from the seed)</div>
       <div class="checks">
@@ -160,6 +164,10 @@ function renderGrid() {
     `<div class="c ${selected.has(c.id) ? 'on' : ''}" data-id="${c.id}" title="${c.name} (${c.continent})"><span class="f" style="${flagStyle(c)}"></span><span class="n">${c.name}</span><span class="tick">✓</span></div>`).join('');
   $('count').textContent = `${selected.size} selected`;
   $('title').placeholder = `${selected.size} Countries Marble Race`;
+  // one-ball passages bottleneck a big field badly: only offer them for small races
+  const flow = $('flow-single');
+  flow.disabled = selected.size > 24;
+  if (flow.disabled) flow.checked = false;
   schedulePlan();
 }
 function renderChips() {
@@ -175,6 +183,7 @@ function settings() {
   return {
     count: selected.size, mode, value: $(`v-${mode}`).value,
     templates: [...document.querySelectorAll('#templates input:checked')].map((i) => i.value),
+    flow: $('flow-single').checked ? 'single' : 'wide',
   };
 }
 async function updatePlan() {
