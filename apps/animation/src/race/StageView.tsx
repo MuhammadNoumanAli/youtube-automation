@@ -243,8 +243,22 @@ const Element: React.FC<{ el: RaceElement; kin: number | undefined; wall: string
   const lit = flash < 6;
   switch (el.type) {
     case 'rotor': {
-      // ball-driven: seesaw (bar on a stand) or paddle wheel (arms + hub); angle comes from the replay
+      // ball-driven: seesaw (bar on a stand), wall flap (hinged half-bar) or paddle wheel (arms + hub); angle from replay
       const base = ((kin ?? 0) / 10) * (Math.PI / 180);
+      if (el.style === 'flap') {
+        // only the half that reaches into the course is drawn; the other half pivots behind the wall
+        const [cx, cy] = el.c;
+        const dir = el.side ?? 1;
+        const bx = cx + dir * Math.cos(base) * el.len;
+        const by = cy + dir * Math.sin(base) * el.len;
+        return (
+          <g>
+            {capsule(cx, cy, bx, by, el.r + 1, '#8fd14f')}
+            <polygon points={`${cx},${cy} ${cx - dir * 12},${cy + 24} ${cx + dir * 6},${cy + 24}`} fill={accent} stroke="#141414" strokeWidth={2} />
+            <circle cx={cx} cy={cy} r={7} fill="#141414" />
+          </g>
+        );
+      }
       const arms = Array.from({ length: el.arms }, (_, i) => {
         const a = base + (i * Math.PI) / el.arms;
         const dx = Math.cos(a) * el.len;

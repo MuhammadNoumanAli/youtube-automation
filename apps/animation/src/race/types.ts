@@ -8,7 +8,18 @@ export type RaceElement =
   | { type: 'peg'; c: [number, number]; r: number }
   | { type: 'pad'; a: [number, number]; b: [number, number]; r: number; kick: number; cooldown: number }
   | { type: 'bumper'; c: [number, number]; r: number; kick: number; cooldown: number }
-  | { type: 'rotor'; style?: 'seesaw' | 'wheel'; c: [number, number]; len: number; r: number; arms: number; rest?: number; maxAngle?: number | null }
+  | {
+      type: 'rotor';
+      style?: 'seesaw' | 'wheel' | 'flap';
+      /** flap: which half reaches into the course, +1 from the left wall, -1 from the right wall */
+      side?: 1 | -1;
+      c: [number, number];
+      len: number;
+      r: number;
+      arms: number;
+      rest?: number;
+      maxAngle?: number | null;
+    }
   | { type: 'pendulum'; pivot: [number, number]; len: number; rod: number; bobR: number; amp: number; period: number; phase: number }
   | { type: 'slider'; a: [number, number]; b: [number, number]; r: number; axis: [number, number]; amp: number }
   | { type: 'belt'; a: [number, number]; b: [number, number]; r: number; speed: number; flip: number }
