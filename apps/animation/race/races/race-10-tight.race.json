@@ -15,7 +15,7 @@
   ],
   "eliminate": [1, 1, 1, 1, 1, 1, 1, 1, 1],
   "templates": ["mix"],
-  "seed": 8,
+  "seed": 82,
   "fps": 30,
   "flow": "single",
   "ballRadius": 22,
