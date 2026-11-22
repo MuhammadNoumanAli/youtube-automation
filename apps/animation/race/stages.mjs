@@ -113,14 +113,17 @@ function runout(rng, r, twists) {
 // ------------------------------------------------------------------ templates
 // Each returns { elements, hopperCx } (hopper and frame are added by buildStage).
 
-function zigzag(rng, r, count, twists, withGates = false) {
+function zigzag(rng, r, count, twists, withGates = false, tight = false) {
   const { x0: X0, x1: X1 } = LAYOUT;
   const top = 290;
   const bottom = 900;
-  const gap = Math.max(5 * r, 120) + rng.range(0, 30);
+  // tight races: the drop chute at the end of each ramp is barely wider than a ball, so the field falls through
+  // one at a time. The tunnel stays tall enough to fit a hammer over the ramp below (a hammer inside a one-ball
+  // chute would seal it: there is no room for a ball to get around the bob).
+  const gap = (tight ? Math.max(2.8 * r, 66) : Math.max(5 * r, 120)) + rng.range(0, tight ? 8 : 30);
   // as steep as possible while keeping room for a ball between one ramp and the next; at least ~3.5 degrees
   // the tunnel under the ramp above must be tall enough that balls cannot wedge (arch) against its tip
-  const headroom = 5 * r + 20 + (count > 40 ? r : 0);
+  const headroom = tight ? 4.8 * r + 18 : 5 * r + 20 + (count > 40 ? r : 0);
   const minDrop = 0.05 * (X1 - X0 - gap); // ~3 degrees
   const dropFor = (k) => Math.min(((bottom - top) / k) * 0.6, (bottom - top) / k - headroom);
   const options = [3, 4, 5].filter((k) => dropFor(k) >= minDrop);
@@ -145,6 +148,26 @@ function zigzag(rng, r, count, twists, withGates = false) {
       cuts.push(trapdoorCut(uc - w / 2, uc + w / 2, { period, open: rng.range(0.6, 0.9), phase: rng.range(0, period) }));
     }
     elements.push(...rampPieces(sx, y, ex, y + drop, cuts));
+    // a hammer swings over the landing zone of every ramp that receives the drop above: a ball that lands or
+    // bounces into its arc is knocked back up the slope, while a ball already rolling passes underneath it
+    // (clearance 2r+6). It hangs below the ramp above, so it never plugs the one-ball chute itself.
+    if (tight && i > 0) {
+      const u = rng.range(0.05, 0.22);
+      const surf = y + drop * u;
+      const bobR = Math.max(12, 0.85 * r);
+      const clearance = 2 * r + 6;
+      const arm = Math.max(28, Math.min(40, 0.3 * r + 24));
+      elements.push({
+        type: 'pendulum',
+        pivot: [sx + (ex - sx) * u, surf - clearance - bobR - arm],
+        len: arm,
+        rod: 4,
+        bobR,
+        amp: rng.range(0.75, 1.0),
+        period: rng.range(1.2, 1.8),
+        phase: rng.range(0, Math.PI * 2),
+      });
+    }
     // a kicker peg in the drop column now and then
     // only where both passages next to it stay wider than a ball (+ margin), or balls wedge against the wall
     const passage = (gap - 2 * 8 - 2 * W) / 2 - 6;
@@ -201,12 +224,13 @@ function plinko(rng, r, count, twists) {
   return { elements, hopperCx: rng.range(X0 + 420, X1 - 420) };
 }
 
-function funnels(rng, r, count, twists) {
+function funnels(rng, r, count, twists, tight = false) {
   const { x0: X0, x1: X1 } = LAYOUT;
   const k = 3;
   const h = 150;
-  const between = Math.max(4 * r, 70);
-  const neck = Math.max(4.8 * r, 60);
+  // tight races: one ball high between funnels and a neck that only fits one at a time
+  const between = tight ? Math.max(2.4 * r + 10, 40) : Math.max(4 * r, 70);
+  const neck = tight ? Math.max(2.3 * r + 10, 40) : Math.max(4.8 * r, 60);
   const elements = [];
   let y = 280;
   let prevNeck = null;
@@ -266,7 +290,7 @@ function spinners(rng, r, count, twists) {
 }
 
 /** Mixed course: hopper first (its width decides where the balls enter), then 3-5 fresh hurdle bands. */
-function mix(rng, r, count, twists, avoidBands = [], takenNames = []) {
+function mix(rng, r, count, twists, avoidBands = [], takenNames = [], tight = false) {
   const cx = rng.range(LAYOUT.x0 + 420, LAYOUT.x1 - 420);
   const hop = hopper(cx, count, r, GATE_OPEN_S);
   const course = composeMix(rng, {
@@ -278,14 +302,15 @@ function mix(rng, r, count, twists, avoidBands = [], takenNames = []) {
     yEnd: LAYOUT.finishY - 30,
     avoid: avoidBands,
     takenNames,
+    tight,
   });
   return { elements: course.elements, hopperCx: cx, name: course.name, bands: course.bands };
 }
 
 const BUILDERS = {
   mix,
-  zigzag: (rng, r, count, twists) => zigzag(rng, r, count, twists, false),
-  gates: (rng, r, count, twists) => zigzag(rng, r, count, twists, true),
+  zigzag: (rng, r, count, twists, tight) => zigzag(rng, r, count, twists, false, tight),
+  gates: (rng, r, count, twists, tight) => zigzag(rng, r, count, twists, true, tight),
   plinko,
   funnels,
   spinners,
@@ -304,13 +329,13 @@ export const TEMPLATE_BANDS = {
  * Build one stage.
  * @returns {{ template, name, theme, elements, spawn, hopper, finishY, gateOpenAt }}
  */
-export function buildStage({ template, rng, ballR, count, twists = DEFAULT_TWISTS, avoidBands = [], takenNames = [] }) {
+export function buildStage({ template, rng, ballR, count, twists = DEFAULT_TWISTS, avoidBands = [], takenNames = [], tight = false }) {
   const build = BUILDERS[template];
   if (!build) throw new Error(`unknown stage template "${template}" (have: ${TEMPLATES.join(', ')})`);
   const course =
     template === 'mix'
-      ? build(rng, ballR, count, { ...DEFAULT_TWISTS, ...twists }, avoidBands, takenNames)
-      : build(rng, ballR, count, { ...DEFAULT_TWISTS, ...twists });
+      ? build(rng, ballR, count, { ...DEFAULT_TWISTS, ...twists }, avoidBands, takenNames, tight)
+      : build(rng, ballR, count, { ...DEFAULT_TWISTS, ...twists }, tight);
   const hop = hopper(course.hopperCx, count, ballR, GATE_OPEN_S);
   let name = course.name;
   if (name === undefined) {

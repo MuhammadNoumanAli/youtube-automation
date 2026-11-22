@@ -106,8 +106,11 @@ test('race files are validated', () => {
   assert.throws(() => loadRace(tmpRace({ id: 'x', countries: [ids[0], ids[0]] })), /duplicate/);
   assert.throws(() => loadRace(tmpRace({ id: 'Bad Id', countries: ids.slice(0, 3) })), /race.id/);
   assert.throws(() => loadRace(tmpRace({ id: 'x', countries: ids.slice(0, 4), stages: 2, eliminate: [3, 1] })), /cannot eliminate/);
+  assert.throws(() => loadRace(tmpRace({ id: 'x', countries: ids.slice(0, 4), stages: 2, flow: 'fast' })), /flow/);
   const ok = loadRace(tmpRace({ id: 'x', countries: ids.slice(0, 6), stages: 2 }));
   assert.deepEqual(ok.eliminate, [3, 2]);
+  assert.equal(ok.flow, 'wide');
+  assert.equal(loadRace(tmpRace({ id: 'x', countries: ids.slice(0, 6), stages: 2, flow: 'single' })).flow, 'single');
 });
 
 test('same seed gives exactly the same race; another seed gives another race', () => {
@@ -214,6 +217,23 @@ test('mixed stages: a new course every stage, no repeated hurdles, never too tal
   }
   assert.ok(seen.size >= 28, `only ${seen.size} different courses in 30 stages`);
   assert.equal(new Set(names).size, names.length, `duplicate stage names: ${names.join(', ')}`);
+});
+
+test('one-ball races finish too, and the tight final carries hammers over its landings', () => {
+  const alive = Array.from({ length: 12 }, (_, i) => `c${i}`);
+  const { data, summary } = simulateStage({ index: 1, template: 'zigzag', alive, eliminate: 3, seed: 1, fps: 30, ballR: 24, tight: true });
+  assert.equal(summary.timedOut, false);
+  assert.equal(summary.qualified.length, 9);
+  const hammers = data.elements.filter((e) => e.type === 'pendulum');
+  assert.ok(hammers.length >= 2, `only ${hammers.length} hammers in the tight final`);
+  // the whole hammer hangs inside the course, below the hopper and above the finish
+  for (const h of hammers) {
+    assert.ok(h.pivot[1] > LAYOUT.hopperBottom, JSON.stringify(h));
+    assert.ok(h.pivot[1] + h.len + h.bobR < LAYOUT.finishY, JSON.stringify(h));
+  }
+  const mix = simulateStage({ index: 1, template: 'mix', alive, eliminate: 2, seed: 7, fps: 30, ballR: 24, tight: true });
+  assert.equal(mix.summary.timedOut, false);
+  assert.ok(mix.data.bands.length >= 2, mix.data.bands.join('>'));
 });
 
 test('a whole race never reuses the previous stage hurdles and never repeats a stage name', () => {

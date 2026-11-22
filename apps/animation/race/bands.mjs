@@ -155,9 +155,10 @@ function wheels(rng, { r, y0 }) {
   return { elements: els, h: 2 * L + 16, exit: full };
 }
 
-function funnel(rng, { r, twists, y0, entry }) {
+function funnel(rng, { r, twists, y0, entry, tight }) {
   const h = rng.range(150, 190);
-  const neck = Math.max(4.8 * r, 60);
+  // tight races: the neck is barely wider than a ball, so the queue goes through one at a time
+  const neck = tight ? Math.max(2.3 * r + 10, 40) : Math.max(4.8 * r, 60);
   const nx = rng.range(X0 + 260, X1 - 260);
   const lx = nx - neck / 2;
   const rx = nx + neck / 2;
@@ -175,8 +176,9 @@ function funnel(rng, { r, twists, y0, entry }) {
 }
 
 /** One long ramp across the course; high end under where the balls come in. Trapdoor shortcut + landing pad twists. */
-function rampGeom(rng, { r, y0, entry }) {
-  const gap = Math.max(5 * r, 120) + rng.range(0, 30);
+function rampGeom(rng, { r, y0, entry, tight }) {
+  // the drop at the end of the ramp is the vertical passage: one ball wide in tight races
+  const gap = (tight ? Math.max(3.2 * r, 78) : Math.max(5 * r, 120)) + rng.range(0, tight ? 8 : 30);
   const centre = (entry.x0 + entry.x1) / 2;
   const dir = narrow(entry) ? (centre < (X0 + X1) / 2 ? 1 : -1) : rng() < 0.5 ? 1 : -1;
   const [sx, ex] = dir === 1 ? [X0, X1 - gap] : [X1, X0 + gap];
@@ -241,8 +243,9 @@ function conveyor(rng, { r, y0 }) {
 }
 
 /** One row of slotted bars sliding sideways; balls drop through when a slot passes beneath them. */
-function sliderRow(rng, r, y) {
-  const slot = 2.2 * 2 * r + 10;
+function sliderRow(rng, r, y, tight) {
+  // the slot is the hole between two bars (each bar capsule is radius W+1): one ball wide in tight races
+  const slot = tight ? 2 * r + 26 : 2.2 * 2 * r + 10;
   const bar = rng.range(170, 240);
   const amp = (bar + slot) / 2;
   const side = amp + 2 * r + 15;
@@ -260,14 +263,14 @@ function sliderRow(rng, r, y) {
   return els;
 }
 
-function sliders(rng, { r, y0 }) {
-  return { elements: sliderRow(rng, r, y0 + 10), h: 24, exit: full };
+function sliders(rng, { r, y0, tight }) {
+  return { elements: sliderRow(rng, r, y0 + 10, tight), h: 24, exit: full };
 }
 
 /** Two sliding floors stacked: balls that survive the first one land on a second, opposite-moving one. */
-function wipeout(rng, { r, y0 }) {
-  const gapY = 2 * r + 26;
-  const els = [...sliderRow(rng, r, y0 + 10), ...sliderRow(rng, r, y0 + 10 + gapY)];
+function wipeout(rng, { r, y0, tight }) {
+  const gapY = 2 * r + 26; // already the minimum that lets a ball roll between the bar capsules
+  const els = [...sliderRow(rng, r, y0 + 10, tight), ...sliderRow(rng, r, y0 + 10 + gapY, tight)];
   return { elements: els, h: gapY + 24, exit: full };
 }
 
@@ -303,10 +306,11 @@ const SUFFIXES = ['Gauntlet', 'Mayhem', 'Run', 'Chaos', 'Express', 'Alley', 'Sho
  * when `takenNames` is passed.
  * @returns {{ elements, bands: string[], name: string }}
  */
-export function composeMix(rng, { r, count, twists, entry, yStart = 250, yEnd = 930, avoid = [], takenNames = [] }) {
+export function composeMix(rng, { r, count, twists, entry, yStart = 250, yEnd = 930, avoid = [], takenNames = [], tight = false }) {
   // the bumper field and the trapdoor floor are the twist bands: switching a twist off removes its hurdle
   const allowedBands = BANDS.filter((b) => (b !== 'bumpers' || twists.bumpers) && (b !== 'trapdoors' || twists.shortcuts));
-  const gapY = Math.max(2.6 * r + 10, 36); // free space between rows: more than a ball, so nothing jams between them
+  // free space between rows: one ball high in tight races, so a crowd has to trickle through
+  const gapY = tight ? Math.max(2.3 * r + 12, 30) : Math.max(2.6 * r + 10, 36);
   const els = [];
   const used = [];
   let y = yStart;
@@ -316,7 +320,7 @@ export function composeMix(rng, { r, count, twists, entry, yStart = 250, yEnd = 
     const fresh = allowedBands.filter((b) => !used.includes(b) && !avoid.includes(b));
     const pool = fresh.length ? fresh : allowedBands.filter((b) => !used.includes(b));
     const kind = rng.pick(pool);
-    const res = BUILD[kind](rng, { r, count, twists, y0: y, entry: e });
+    const res = BUILD[kind](rng, { r, count, twists, y0: y, entry: e, tight });
     if (y + res.h > yEnd) continue; // too tall for the room left: try another band
     els.push(...res.elements);
     used.push(kind);

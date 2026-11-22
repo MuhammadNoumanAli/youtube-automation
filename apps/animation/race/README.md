@@ -85,6 +85,7 @@ finish pops, winner ding, elimination sound, podium sparkle (all original, from 
 | `startOrder` | `"comeback"` (default: last stage's slowest start at the front of the hopper) or `"random"` |
 | `seed` | any number or text; change it for a different race with the same settings |
 | `courseWidth` | `1` (default, full width) down to `0.5`: squeezes the walls toward the centre and rebuilds every hurdle inside them, so a small field races almost single file |
+| `flow` | `"wide"` (default) or `"single"`: one-ball passages. Drop chutes, funnel necks, slider slots and the space between mixed hurdles shrink to about a ball and a half, and the final's ramps get swinging hammers over their landing zones. Intended for 24 or fewer countries; a big field would jam behind every chute |
 | `fps`, `ballRadius`, `maxStageSeconds`, `introSeconds`, `podiumSeconds` | optional |
 
 Stage types, all randomised from the seed:

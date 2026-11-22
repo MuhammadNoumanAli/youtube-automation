@@ -146,6 +146,7 @@ export function simulateStage({
   avoidBands = [],
   takenNames = [],
   courseWidth = 1,
+  tight = false,
 }) {
   if (eliminate < 1 || eliminate >= alive.length) throw new Error(`stage ${index}: cannot eliminate ${eliminate} of ${alive.length}`);
   const rng = makeRng(`${seed}:stage:${index}`);
@@ -156,7 +157,7 @@ export function simulateStage({
     LAYOUT.x0 = course.x0;
     LAYOUT.x1 = course.x1;
     setBandBounds(course.x0, course.x1);
-    stage = buildStage({ template, rng, ballR, count: alive.length, twists, avoidBands, takenNames });
+    stage = buildStage({ template, rng, ballR, count: alive.length, twists, avoidBands, takenNames, tight });
   } finally {
     LAYOUT.x0 = FULL.x0;
     LAYOUT.x1 = FULL.x1;
@@ -343,6 +344,9 @@ export function loadRace(raceFile, overrides = {}) {
   });
   const courseWidth = race.courseWidth ?? 1;
   if (!(courseWidth >= 0.5 && courseWidth <= 1)) throw new Error('race.courseWidth must be between 0.5 (narrowest) and 1 (full width)');
+  // "single" squeezes every vertical passage to one ball: slower, more traffic-jam drama on small fields
+  const flow = race.flow ?? 'wide';
+  if (!['wide', 'single'].includes(flow)) throw new Error('race.flow must be "wide" (default) or "single" (one-ball passages)');
   return {
     id: race.id,
     title: race.title ?? `${countries.length} Countries Marble Race`,
@@ -360,6 +364,7 @@ export function loadRace(raceFile, overrides = {}) {
     introSeconds: race.introSeconds ?? 6,
     podiumSeconds: race.podiumSeconds ?? 10,
     courseWidth: race.courseWidth ?? 1,
+    flow,
     finalists: left,
   };
 }
@@ -390,6 +395,7 @@ export function simulateRace(race, onStage = () => {}) {
       avoidBands: lastBands,
       takenNames: usedNames,
       courseWidth: race.courseWidth,
+      tight: race.flow === 'single',
     });
     onStage(data, summary);
     summaries.push(summary);
@@ -447,7 +453,10 @@ async function main() {
   const race = loadRace(path.resolve(args.race), overrides);
   const outDir = path.join(path.resolve(args.out), 'replay');
   fs.mkdirSync(outDir, { recursive: true });
-  console.log(`[race] ${race.title}: ${race.countries.length} countries, ${race.stages} stages, seed ${race.seed}, ball r=${race.ballRadius}`);
+  console.log(
+    `[race] ${race.title}: ${race.countries.length} countries, ${race.stages} stages, seed ${race.seed}, ball r=${race.ballRadius}` +
+      `${race.flow === 'single' ? ', one-ball passages' : ''}`,
+  );
   const t0 = Date.now();
   const meta = simulateRace(race, (data, s) => {
     fs.writeFileSync(path.join(outDir, stageFile(s.index)), JSON.stringify(data));
